@@ -17,7 +17,7 @@ Task status - TaskStatus(Enum):
 1. Employee
     1. name: string
     2. email: string
-    3. roles: array[Role.id]
+    3. roles: array[Role]
 2. Account
     1. total: float 
     2. employee: Employee.id
@@ -31,3 +31,5 @@ Task status - TaskStatus(Enum):
     3. status: TaskStatus
     4. assignee: employee.id 
     5. fee: float
+
+All entities will have additional id: snowflake_id and created_at:timestamp fields
