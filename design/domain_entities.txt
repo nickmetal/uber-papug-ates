@@ -1,0 +1,35 @@
+Company employees roles - Role(Enum):
+1. Administrator
+2. Accountant
+3. CEO
+4. Developer
+5. Manager
+
+Transaction type - TransactionType(Enum):
+1. reward
+2. income
+3. outcome
+
+Task status - TaskStatus(Enum):
+1. new
+2. completed
+
+1. Employee
+    1. name: string
+    2. email: string
+    3. roles: array[Role]
+2. Account
+    1. total: float 
+    2. employee: Employee.id
+3. Audit log
+    1. created_by: Employee.id
+    2. type: TransactionType
+    3. change_sum: float
+4. Task
+    1. title: string
+    2. description: string
+    3. status: TaskStatus
+    4. assignee: employee.id 
+    5. fee: float
+
+All entities will have additional id: snowflake_id and created_at:timestamp fields
