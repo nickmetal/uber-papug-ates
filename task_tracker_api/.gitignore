@@ -139,6 +139,3 @@ cython_debug/
 
 # Text Editor
 .vscode
-
-
-POSTGRES_PASSWORD
