@@ -123,3 +123,33 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+### APP settings
+OAUTH_CLIENT_ID=os.environ['OAUTH_CLIENT_ID']
+OAUTH_CLIENT_SECRET=os.environ['OAUTH_CLIENT_SECRET']
+OAUTH_URL=os.environ['OAUTH_URL']
+OAUTH_TOKEN_URL=os.environ['OAUTH_TOKEN_URL']
+OAUTH_REDIRECT_URL=os.environ['OAUTH_REDIRECT_URL']
+OAUTH_ACCONT_INFO_URL=os.environ['OAUTH_ACCONT_INFO_URL']
+OAUTHLIB_INSECURE_TRANSPORT=os.environ['OAUTHLIB_INSECURE_TRANSPORT']
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

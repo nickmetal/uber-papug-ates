@@ -31,5 +31,5 @@ docker-compose up --build
 
 - app_name - task_service
 - redirect url - http://localhost:7777/auth_callback
-- scopes: openid task:read task:add task:complete task:shuffle 
+- scopes: openid admin manager worker
 - copy app details

@@ -15,7 +15,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from task_service import views
+from task_service import access_control
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
+    path('auth_callback/', access_control.auth_callback),
+    path('login/', access_control.redirect_to_login),
+    path('user/', access_control.get_user_info),
+    
+    path('task/', views.get_task),
+    # TODO: rest naming
+    path('add_task/', views.add_task),
+    # path('update_task/', views.update_task,
+    # path('shuffle_tasks/', views.shuffle_tasks),
 ]
