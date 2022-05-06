@@ -133,6 +133,8 @@ OAUTH_TOKEN_URL=os.environ['OAUTH_TOKEN_URL']
 OAUTH_REDIRECT_URL=os.environ['OAUTH_REDIRECT_URL']
 OAUTH_ACCONT_INFO_URL=os.environ['OAUTH_ACCONT_INFO_URL']
 OAUTHLIB_INSECURE_TRANSPORT=os.environ['OAUTHLIB_INSECURE_TRANSPORT']
+RABBITMQ_DSN = os.environ.get('RABBITMQ_DSN', 'localhost')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

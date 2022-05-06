@@ -1,4 +1,5 @@
 import json
+import logging
 from django.core.management.base import BaseCommand
 from task.models import Task
 
@@ -28,7 +29,8 @@ class Command(BaseCommand):
                 self.stdout.write(f'skip unknown event: {event}')
                 
             ch.basic_ack(delivery_tag=method.delivery_tag)
-        except Exception as e:
-            self.stderr.write(self.style.ERROR(f'Un ack message: {body} due to {e}'))
+        except:
+            logging.exception('trace')
+            self.stderr.write(self.style.ERROR(f'Un ack message: {body}'))
         
     
