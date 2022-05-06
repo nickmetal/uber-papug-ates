@@ -19,13 +19,13 @@ from task_service import views
 from task import views as task_views
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('auth_callback/', views.auth_callback),
     path('login/', views.redirect_to_login),
     
     path('task/<int:task_id>', task_views.get_task),
     # TODO: rest naming
     path('add_task/', task_views.add_task),
-    # path('update_task/', views.update_task,
-    # path('shuffle_tasks/', views.shuffle_tasks),
+    path('update_task/', task_views.update_task),
+    path('shuffle_tasks/', task_views.shuffle_tasks),
 ]

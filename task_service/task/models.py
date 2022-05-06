@@ -4,7 +4,6 @@ from decimal import Decimal
 from enum import Enum
 from django.db import models
 from snowflake import SnowflakeGenerator
-import dataclasses, json
 
 
 @dataclass
@@ -40,16 +39,8 @@ class BaseModel(models.Model):
 
 
 class Task(BaseModel):
-    title: models.CharField()
-    description: models.CharField()
-    status: models.CharField(choices=[(item.value, item.value) for item in TaskStatus])
+    title = models.CharField(max_length=250)
+    description = models.CharField(max_length=250)
+    status = models.CharField(choices=[(item.value, item.value) for item in TaskStatus], max_length=100)
     assignee = models.BigIntegerField()
-    fee: models.DecimalField()
-
-
-
-class DTOJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
-        return super().default(o)
+    fee = models.DecimalField(max_digits=15, decimal_places=10)

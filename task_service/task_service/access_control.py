@@ -30,7 +30,7 @@ def is_authorized(required_scopes: str, current_scope: str) -> bool:
 def get_token_auth_header(request):
     """Obtains the Access Token from the Authorization Header
     """
-    auth = request.META.get("AUTHORIZATION", None)
+    auth = request.META.get("HTTP_AUTHORIZATION", None)
     if auth is None:
         return 
     

@@ -17,7 +17,7 @@ cd docker-composes/rabbitmq
 docker-compose up --build
 # open localhost:3000
 # apply migrations on UI
-# register new user(with admin role)
+# register new user(with admin role) - http://localhost:3000/
 # create new oauth app in http://localhost:3000/oauth/applications/new(see app settings)
 ```
 
@@ -33,3 +33,10 @@ docker-compose up --build
 - redirect url - http://localhost:7777/auth_callback
 - scopes: openid admin manager worker
 - copy app details
+
+
+### postman collection for testing
+
+https://www.getpostman.com/collections/2a17b038b6f22bd1ff0d
+
+NOTE: get access token from Django terminal output since https://github.com/davydovanton/popug-inventory.git doesn't redirect anonymous users to login page
