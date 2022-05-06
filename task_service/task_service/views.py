@@ -81,7 +81,8 @@ logger = logging.getLogger(__name__)
 #     return JsonResponse(data={"status": "ok", "employee": employee_dto.to_dict()})
 
 
-@requires_scope("admin manager worker")
+# @requires_scope("admin manager worker")
+@requires_scope("admin")
 @require_http_methods(["GET"])
 def get_task(request: HttpRequest):
     return JsonResponse(data={"status": "ok"})

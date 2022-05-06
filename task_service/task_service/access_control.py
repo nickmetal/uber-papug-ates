@@ -35,9 +35,9 @@ def get_token_session(request):
 
 
 def requires_scope(required_scope=None):
-    """Determines if the required scope is present in the Access Token
+    """Determines at least one required scope is present in the Access Token
     Args:
-        required_scope (str): The scope required to access the resource
+        required_scope (str): The scope list as string required to access the resource
         
     Taken from https://auth0.com/docs/quickstart/backend/django/01-authorization
     """
@@ -86,11 +86,11 @@ def auth_callback(request: HttpRequest):
     return redirect(redirected_from)
 
 
-def get_default_session(token_info: Dict):
+def get_default_session(token_info: Dict) -> OAuth2Session:
     return OAuth2Session(settings.OAUTH_CLIENT_ID, token=token_info)
     
 
-def get_user_info(oauth_session: OAuth2Session):
+def get_user_info(oauth_session: OAuth2Session) -> Dict:
     response = oauth_session.get(settings.OAUTH_ACCONT_INFO_URL)
     response.raise_for_status()
     return response.json()
