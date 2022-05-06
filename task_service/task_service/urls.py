@@ -16,17 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from task_service import views
-from task_service import access_control
+from task import views as task_views
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
-    path('auth_callback/', access_control.auth_callback),
-    path('login/', access_control.redirect_to_login),
-    path('user/', access_control.get_user_info),
+    path('auth_callback/', views.auth_callback),
+    path('login/', views.redirect_to_login),
     
-    path('task/', views.get_task),
+    path('task/<int:task_id>', task_views.get_task),
     # TODO: rest naming
-    path('add_task/', views.add_task),
+    path('add_task/', task_views.add_task),
     # path('update_task/', views.update_task,
     # path('shuffle_tasks/', views.shuffle_tasks),
 ]

@@ -1,93 +1,34 @@
-import json
-from http import HTTPStatus
-from django.http import HttpRequest, JsonResponse
-# from oauth2_provider.decorators import protected_resource
-# from users.models import Employee, EmployeeDTO
-# from users.forms import SignUpForm, PatchRoleForm
-from django.views.decorators.http import require_http_methods
 import logging
-from requests_oauthlib import OAuth2Session
+from django.http import HttpRequest
+from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from django.shortcuts import redirect
-from task_service.access_control import requires_scope
+from requests_oauthlib import OAuth2Session
+
 
 logger = logging.getLogger(__name__)
 
 
-# class TestApiEndpoint(ScopedProtectedResourceView):
-#     required_scopes = ["test"]
-#     # required_scopes = ['can_make_it can_break_it']
-
-#     def get(self, request, *args, **kwargs):
-#         print(f"{request.user.is_anonymous=}")
-#         print(f"{request.user.is_authenticated=}")
-#         print(f"{request.user=}")
-        
-#         # import ipdb
-
-#         # ipdb.set_trace()
-#         return JsonResponse(data={"status": "ok"})
-
-
-
-
-# def validate_request(form_model):
-#     def decorator(func):
-#         def wrapper(request):
-#             try:
-#                 content = request.POST.dict() or json.loads(request.body)
-#                 form = form_model(content)
-#             except json.decoder.JSONDecodeError as e:
-#                 logger.exception("invalid body payload received")
-#                 return JsonResponse(
-#                     data={"status": "error", "details": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR
-#                 )
-
-#             if form.is_valid():
-#                 try:
-#                     return func(request, form)
-#                 except Exception as e:
-#                     logger.exception("decorated controller error")
-#                     return JsonResponse(
-#                         data={"status": "error", "details": str(e)}, status=HTTPStatus.INTERNAL_SERVER_ERROR
-#                     )
-#             return JsonResponse(data={"error": form.errors}, status=HTTPStatus.BAD_REQUEST)
-
-#         return wrapper
-
-#     return decorator
-
-
-# # @validate_request(PatchRoleForm)
-# @require_http_methods(["PATCH"])
-# # @protected_resource(scopes=["read write"])  # TODO: check it
-# def assign_role(request: HttpRequest, form: PatchRoleForm):
-#     patch = json.loads(request.body)
-#     try:
-#         employee = Employee.objects.get(id=patch["id"])
-#     except Employee.DoesNotExist:
-#         return JsonResponse(data={"status": "error", "details": "not_exists"}, status=HTTPStatus.NOT_FOUND)
-
-#     employee.role = patch["role"]
-#     employee.save()
-#     employee_dto = EmployeeDTO(
-#         id=employee.id,
-#         name=employee.username,
-#         created_at=employee.created_at,
-#         updated_at=employee.updated_at,
-#         role=employee.role,
-#         email=employee.email,
-#     )
-#     return JsonResponse(data={"status": "ok", "employee": employee_dto.to_dict()})
-
-
-# @requires_scope("admin manager worker")
-@requires_scope("admin")
 @require_http_methods(["GET"])
-def get_task(request: HttpRequest):
-    return JsonResponse(data={"status": "ok"})
-
-@requires_scope("admin manager worker")
+def redirect_to_login(request: HttpRequest):
+    redirect_url = settings.OAUTH_REDIRECT_URL
+    scope = 'openid ' + request.GET.get('required_scope', '')
+    state = request.GET.get('prev_path')
+    oauth_session = OAuth2Session(settings.OAUTH_CLIENT_ID, state=state, redirect_uri=redirect_url, scope=scope.strip())
+    authorization_url, state = oauth_session.authorization_url(settings.OAUTH_URL)
+    return redirect(authorization_url)
+    
+    
 @require_http_methods(["GET"])
-def add_task(request: HttpRequest):
-    return JsonResponse(data={"status": "ok"})
+def auth_callback(request: HttpRequest):
+    redirect_url = settings.OAUTH_REDIRECT_URL
+    # scope = 'openid worker'
+    token_url = settings.OAUTH_TOKEN_URL
+    client_secret = settings.OAUTH_CLIENT_SECRET
+    redirected_from = request.GET.get('state')
+    oauth_session = OAuth2Session(settings.OAUTH_CLIENT_ID, state=redirected_from, redirect_uri=redirect_url)
+    
+    token_info = oauth_session.fetch_token(token_url, client_secret=client_secret, authorization_response=request.build_absolute_uri())
+    request.session['access_token'] = token_info['access_token']
+    # redirect to origin page
+    return redirect(redirected_from)
