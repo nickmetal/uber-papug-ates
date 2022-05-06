@@ -18,7 +18,9 @@ def get_default_session(token_info: Dict) -> OAuth2Session:
 def get_user_info(oauth_session: OAuth2Session) -> Dict:
     response = oauth_session.get(settings.OAUTH_ACCONT_INFO_URL)
     response.raise_for_status()
-    return response.json()
+    user_info = response.json()
+    assert user_info
+    return user_info
 
 
 def is_authorized(required_scopes: str, current_scope: str) -> bool:
@@ -36,14 +38,18 @@ def get_token_auth_header(request):
     
     parts = auth.split()
     token = parts[1]
-
+    logger.debug('taking token from header')
     return token
 
 
 def get_token_session(request):
     """Obtains the Access Token from the http session
     """
-    return request.session.get('access_token')
+    token = request.session.get('access_token')
+    if token:
+        logger.debug('taking token from session and removing it')
+        del request.session['access_token']
+        return token
 
 
 def requires_scope(required_scope=None):
@@ -58,18 +64,15 @@ def requires_scope(required_scope=None):
         def decorated(*args, **kwargs):
             request = args[0]
             token = get_token_auth_header(request=request) or get_token_session(request=request)
-            if token is None:
+            if required_scope and token is None:
                 logger.debug('redirecting to login')
                 required_scopes = required_scope or ''
                 return redirect(f'/login?prev_path={args[0].build_absolute_uri()}&required_scope={required_scopes}')
 
-            session = get_default_session(token_info={'access_token': token, 'token_type': 'Bearer'})
-            if required_scope:
+            if required_scope and token:
+                session = get_default_session(token_info={'access_token': token, 'token_type': 'Bearer'})
                 user = get_user_info(session)
                 logger.debug(f'checking that role: {user=}')
-                
-                # set token user is as primary id of current user
-                request.session['user_id'] = user['id']
                 
                 if is_authorized(required_scopes=required_scope, current_scope=user['role']):
                     return f(*args, **kwargs)

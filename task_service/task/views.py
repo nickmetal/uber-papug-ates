@@ -24,7 +24,8 @@ def serialize_task(task: Task) -> Dict:
         description=task.description,
         status=task.status,
         assignee=task.assignee,
-        fee=task.fee,
+        fee_on_assign=task.fee,
+        fee_on_complete=task.fee,
     )
     return asdict(dto)
 
@@ -40,6 +41,11 @@ def get_task(request: HttpRequest, task_id: int):
 @require_http_methods(["POST"])
 def add_task(request: HttpRequest):
     body = json.loads(request.body)
+    body['fee_on_assign'] = round(random.uniform(-10, -20), 2)
+    body['fee_on_complete'] = round(random.uniform(20, 40), 2)
+    
+    # TODO: check that user not manager/admin
+    # assignee = body['assignee']
     # TODO: add form validation
     task = Task.objects.create(**body)
     return JsonResponse(data=serialize_task(task))

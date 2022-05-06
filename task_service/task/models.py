@@ -25,7 +25,8 @@ class TaskDTO(BaseEntity):
     description: str
     status: TaskStatus
     assignee: int  # foreing key to  account_domain.Employee.id
-    fee: Decimal
+    fee_on_assign: Decimal
+    fee_on_complete: Decimal
 
 
 def get_id(id_generator=SnowflakeGenerator(42)) -> int:
@@ -43,4 +44,5 @@ class Task(BaseModel):
     description = models.CharField(max_length=250)
     status = models.CharField(choices=[(item.value, item.value) for item in TaskStatus], max_length=100)
     assignee = models.BigIntegerField()
-    fee = models.DecimalField(max_digits=15, decimal_places=10)
+    fee_on_assign = models.DecimalField(max_digits=15, decimal_places=10)
+    fee_on_complete = models.DecimalField(max_digits=15, decimal_places=10)

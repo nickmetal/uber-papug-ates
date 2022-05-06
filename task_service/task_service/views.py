@@ -1,9 +1,12 @@
 import logging
-from django.http import HttpRequest
+from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from django.shortcuts import redirect
 from requests_oauthlib import OAuth2Session
+from django.contrib.auth.models import User
+
+from task_service.access_control import get_user_info
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,28 @@ def auth_callback(request: HttpRequest):
     oauth_session = OAuth2Session(settings.OAUTH_CLIENT_ID, state=redirected_from, redirect_uri=redirect_url)
     
     token_info = oauth_session.fetch_token(token_url, client_secret=client_secret, authorization_response=request.build_absolute_uri())
+    token_user = get_user_info(oauth_session)
+
+    # TODO: create CUD event createUser
+    user_data = {
+        'id': token_user['id'] + 10,  # make offset to prevent userid mix(for dev only)
+        # 'id': user['public_id'],
+        'email': token_user['email'],
+        'username': token_user['full_name'] + '_dev',
+        'is_superuser': token_user['role'] == 'admin',
+        'is_staff': True,
+    }
+    user, is_new = User.objects.get_or_create(**user_data)
+    if is_new:
+        logger.info(f'new user: {user_data}')
+        user.set_password(token_user['full_name'])  # TODO: one day
+        user.save() 
+    else:
+        logger.debug(f'existed user: {user_data}')
+    
     request.session['access_token'] = token_info['access_token']
+    request.session.set_expiry(10)
+
     # redirect to origin page
-    return redirect(redirected_from)
+    # return redirect(redirected_from)
+    return JsonResponse({'status': 'authorized', 'redirected_from': redirected_from})
