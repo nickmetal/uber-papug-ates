@@ -144,7 +144,7 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': os.getenv('LOG_LEVEL', 'INFO'),
     },
     'loggers': {
         'django': {
@@ -155,7 +155,7 @@ LOGGING = {
     },
     'formatters': {
         'simple': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {funcName} {message}',
             'style': '{',
         },
     },
