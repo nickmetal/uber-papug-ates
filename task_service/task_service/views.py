@@ -28,7 +28,10 @@ def auth_callback(request: HttpRequest):
     oauth_session = OAuth2Session(settings.OAUTH_CLIENT_ID, state=redirected_from, redirect_uri=redirect_url)
 
     token_info = oauth_session.fetch_token(
-        token_url, client_secret=client_secret, authorization_response=request.build_absolute_uri()
+        token_url,
+        client_secret=client_secret,
+        authorization_response=request.build_absolute_uri(),
+        include_client_id=True,
     )
     request.session["access_token"] = token_info["access_token"]
     request.session.set_expiry(10)

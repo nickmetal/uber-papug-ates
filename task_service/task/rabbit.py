@@ -13,7 +13,10 @@ class RabbitMQClient:
 
     def connect(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(self.dsn))
-        return connection.channel()
+        channel = connection.channel()
+        channel.queue_declare(queue=self.queue_name, durable=True)
+        channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
+        return channel
 
     def default_callback(self, ch, method, properties, body):
         print("Receive: {}".format(body))
@@ -22,9 +25,7 @@ class RabbitMQClient:
         cb = cb or self.default_callback
 
         try:
-            declared_result = self.channel.queue_declare(queue=self.queue_name, durable=True)
-            queue_name = declared_result.method.queue
-            self.channel.queue_bind(exchange=self.exchange_name, queue=queue_name, routing_key=routing_key)
+            self.channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name, routing_key=routing_key)
             self.channel.basic_consume(on_message_callback=cb, queue=self.queue_name, auto_ack=False)
             print("Waiting for messages. To exit press CTRL+C")
             self.channel.start_consuming()

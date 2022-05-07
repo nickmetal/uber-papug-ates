@@ -20,8 +20,6 @@ executing==0.8.3
 flake8==4.0.1
 idna==3.3
 iniconfig==1.1.1
-ipdb==0.13.9
-ipython==8.3.0
 isort==5.10.1
 jedi==0.18.1
 jwcrypto==1.2
