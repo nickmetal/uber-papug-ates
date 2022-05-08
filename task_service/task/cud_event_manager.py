@@ -28,9 +28,22 @@ class TaskCreatedEvent(TaskServiceCUDEvent):
 
 
 @dataclass
-class TaskReAssignedEvent(TaskServiceCUDEvent):
-    data: TaskDTO
-    event_name: str = "TaskReAssigned"
+class TaskCompletedEvent(TaskServiceCUDEvent):
+    data: dict
+    """data:
+    {'id': id_, 'status': 'completed'}
+    """
+    event_name: str = "TaskCompletedEvent"
+
+
+@dataclass
+class TasksAssignedEvent(TaskServiceCUDEvent):
+    data: dict
+    """data:
+    
+    {"tasks": [TaskDTO, ...]}
+    """
+    event_name: str = "TasksAssigned"
 
 
 class EventManager:
@@ -89,6 +102,9 @@ class EventManager:
             ValueError(f"Unsupported event: {event}")
 
     def send_event(self, event: TaskServiceCUDEvent):
-        logger.debug(f'sending: {event=} to {self.task_service_exchange_name=}')
-        self.mq_client.publish(body=asdict(event), exchange_name=self.task_service_exchange_name)
+        try:
+            logger.debug(f'sending: {event=} to {self.task_service_exchange_name=}')
+            self.mq_client.publish(body=asdict(event), exchange_name=self.task_service_exchange_name)
+        except Exception:
+            logger.exception(f'unable to send {event=}')
 

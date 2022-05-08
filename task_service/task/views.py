@@ -10,7 +10,7 @@ from django.db import transaction
 
 from task_service.access_control import requires_scope
 from task.models import Task, TaskDTO, TaskStatus
-from task.cud_event_manager import EventManager, TaskCreatedEvent, TaskReAssignedEvent
+from task.cud_event_manager import EventManager, TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
 from task.rabbit import RabbitMQClient
 from task.models import TaskTrackerUser
 
@@ -56,17 +56,20 @@ def add_task(request: HttpRequest):
     
     # TODO: check that user not manager/admin
     task = Task.objects.create(**body)
-    data = serialize_task(task)
-    cud_event = TaskCreatedEvent(data=data)
-    event_manager.send_event(event=cud_event)
-    return JsonResponse(data=data)
+    response_data = serialize_task(task)
+    event_manager.send_event(event=TaskCreatedEvent(data=response_data))
+    return JsonResponse(data=response_data)
 
 @requires_scope("admin manager worker")
 @require_http_methods(["PUT"])
 def update_task(request: HttpRequest):
+    """Is used by seeting complete status"""
     body = json.loads(request.body)
     id_ = body['id']
     Task.objects.filter(id=id_).update(**body)
+    if body['status'] == 'completed':
+        data = {'id': id_, 'status': 'completed'}
+        event_manager.send_event(event=TaskCompletedEvent(data=data))
     return JsonResponse(data={"status": "updated"})
 
 
@@ -78,7 +81,6 @@ def shuffle_tasks(request: HttpRequest):
     Note: probably has distribution transaction issue, need to redesign and fix that 
     """
 
-    cud_events = []
     tasks = []
     # TODO: think how to do random choise not in all-in-memory
     with transaction.atomic():
@@ -93,11 +95,9 @@ def shuffle_tasks(request: HttpRequest):
             
             task_dto = serialize_task(task)
             tasks.append(task_dto)  
-            cud_event = TaskReAssignedEvent(data=task_dto)
-            cud_events.append(cud_event)
             logger.debug(f'new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}')
 
-    for event in cud_events:
-        event_manager.send_event(event=event)
+    event = TasksAssignedEvent(data={"tasks": tasks})
+    event_manager.send_event(event=event)
             
     return JsonResponse(data={"status": "shuffled", "tasks": tasks})
