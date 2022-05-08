@@ -73,7 +73,7 @@ def update_task(request: HttpRequest):
     return JsonResponse(data={"status": "updated"})
 
 
-# @requires_scope("admin manager")
+@requires_scope("admin manager")
 @require_http_methods(["POST"])
 def shuffle_tasks(request: HttpRequest):
     """Randomly shuffles not completed tasks across all users.
