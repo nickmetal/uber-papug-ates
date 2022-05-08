@@ -10,10 +10,13 @@ from django.db import transaction
 
 from task_service.access_control import requires_scope
 from task.models import Task, TaskDTO, TaskStatus
-from task.cud_event_manager import EventManager, TaskCreatedEvent
+from task.cud_event_manager import EventManager, TaskCreatedEvent, TaskReAssignedEvent
 from task.rabbit import RabbitMQClient
+from task.models import TaskTrackerUser
+
 
 logger = logging.getLogger(__name__)
+
 
 #TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
@@ -28,7 +31,7 @@ def serialize_task(task: Task) -> Dict:
         title=task.title,
         description=task.description,
         status=task.status,
-        assignee=task.assignee,
+        assignee=task.assignee.public_id,
         fee_on_assign=task.fee_on_assign,
         fee_on_complete=task.fee_on_complete,
     )
@@ -45,17 +48,17 @@ def get_task(request: HttpRequest, task_id: int):
 @requires_scope("admin manager worker")
 @require_http_methods(["POST"])
 def add_task(request: HttpRequest):
+    # TODO: add form validation
     body = json.loads(request.body)
     body['fee_on_assign'] = round(random.uniform(-10, -20), 2)
     body['fee_on_complete'] = round(random.uniform(20, 40), 2)
+    body['assignee'] = TaskTrackerUser.objects.get(public_id=body['assignee'])
     
     # TODO: check that user not manager/admin
-    # assignee = body['assignee']
-    # TODO: add form validation
     task = Task.objects.create(**body)
     data = serialize_task(task)
-    event = TaskCreatedEvent(data=data)
-    event_manager.send_event(event=event)
+    cud_event = TaskCreatedEvent(data=data)
+    event_manager.send_event(event=cud_event)
     return JsonResponse(data=data)
 
 @requires_scope("admin manager worker")
@@ -74,22 +77,27 @@ def shuffle_tasks(request: HttpRequest):
     
     Note: probably has distribution transaction issue, need to redesign and fix that 
     """
-    queryset = Task.objects.select_for_update().filter(status=TaskStatus.NEW.value)
-    
-    #TODO: obtain account ids from account service
-    # TODO: send events to bus about that shuffle
-    users = [1,2,3]
+
+    cud_events = []
+    tasks = []
+    # TODO: think how to do random choise not in all-in-memory
     with transaction.atomic():
-        tasks = []
-        for task in queryset:
+        task_queryset = Task.objects.select_for_update().filter(status=TaskStatus.NEW.value)
+        users = list(TaskTrackerUser.objects.filter(role='worker'))
+        for task in task_queryset:
         
-            user_id = random.choice(users)    
-            previous_user_id = task.assignee
-            task.assignee = user_id
+            tasK_user = random.choice(users)    
+            previous_user_id = task.assignee.public_id
+            task.assignee = tasK_user
             task.save()
             
-            
-            tasks.append(task)   
+            task_dto = serialize_task(task)
+            tasks.append(task_dto)  
+            cud_event = TaskReAssignedEvent(data=task_dto)
+            cud_events.append(cud_event)
             logger.debug(f'new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}')
+
+    for event in cud_events:
+        event_manager.send_event(event=event)
             
-    return JsonResponse(data={"status": "shuffled", "tasks": len(tasks)})
+    return JsonResponse(data={"status": "shuffled", "tasks": tasks})

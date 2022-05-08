@@ -154,10 +154,15 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
+        'pika': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
     'formatters': {
         'simple': {
-            'format': '{levelname} {asctime} {module} {funcName} {message}',
+            'format': '{levelname} {asctime} {name} {funcName} {message}',
             'style': '{',
         },
     },

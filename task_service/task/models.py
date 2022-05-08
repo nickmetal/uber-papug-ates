@@ -4,6 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from django.db import models
 from snowflake import SnowflakeGenerator
+from django.contrib.auth.models import User
 
 
 @dataclass
@@ -12,6 +13,13 @@ class BaseEntity:
     id: int  # snowflake id
     created_at: datetime
     updated_at: datetime
+
+
+class TaskTrackerUser(User):
+    public_id = models.CharField(max_length=250)
+    role = models.CharField(max_length=250)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class TaskStatus(Enum):
@@ -24,7 +32,7 @@ class TaskDTO(BaseEntity):
     title: str
     description: str
     status: TaskStatus
-    assignee: int  # foreing key to  account_domain.Employee.id
+    assignee: str  # foreing key to  account_domain.Employee.id
     fee_on_assign: Decimal
     fee_on_complete: Decimal
 
@@ -43,6 +51,6 @@ class Task(BaseModel):
     title = models.CharField(max_length=250)
     description = models.CharField(max_length=250)
     status = models.CharField(choices=[(item.value, item.value) for item in TaskStatus], max_length=100)
-    assignee = models.BigIntegerField()
+    assignee = models.ForeignKey(TaskTrackerUser, on_delete=models.CASCADE)
     fee_on_assign = models.DecimalField(max_digits=15, decimal_places=10)
     fee_on_complete = models.DecimalField(max_digits=15, decimal_places=10)
