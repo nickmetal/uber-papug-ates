@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Optional
 from django.db import models
 from snowflake import SnowflakeGenerator
 from django.contrib.auth.models import User
@@ -35,6 +36,11 @@ class TaskDTO(BaseEntity):
     assignee: str  # foreing key to  account_domain.Employee.id
     fee_on_assign: Decimal
     fee_on_complete: Decimal
+    jira_id: field(default=None)   # made it optional for tasks instanses without jira_id, might me removed after proper migration 
+    
+    def __post_init__(self):
+        if all(char in self.title for char in '[]'):
+            raise ValueError("Field 'title' cannot contain jira id.")
 
 
 def get_id(id_generator=SnowflakeGenerator(42)) -> int:
@@ -54,3 +60,4 @@ class Task(BaseModel):
     assignee = models.ForeignKey(TaskTrackerUser, on_delete=models.CASCADE)
     fee_on_assign = models.DecimalField(max_digits=15, decimal_places=10)
     fee_on_complete = models.DecimalField(max_digits=15, decimal_places=10)
+    jira_id = models.CharField(max_length=100, blank=True)

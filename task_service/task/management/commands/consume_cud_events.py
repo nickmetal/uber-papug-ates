@@ -9,25 +9,16 @@ from task.cud_event_manager import EventManager
 
 
 class Command(BaseCommand):
-    help = ''
-
-    # def add_arguments(self, parser):
-        # parser.add_argument('poll_ids', nargs='+', type=int)
+    help = 'Consumes cud events from common message broker'
 
     def handle(self, *args, **options): 
-        tasks = Task.objects.all()
-        
         self.rmq_client = RabbitMQClient()
         self.rmq_client.listen(cb=self.handle_rabbitmq_message)
         
     def handle_rabbitmq_message(self, ch, method, properties, body):
         try:
             event = json.loads(body)
-            if event.get('event_name') in EventManager.SUPPORTED_EVENTS:
-                EventManager(self.rmq_client).process_event(event)
-            else:
-                self.stdout.write(f'skip unknown event: {event}')
-                
+            EventManager(self.rmq_client).consume_event(event)
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except:
             logging.exception('trace')

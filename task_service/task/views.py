@@ -34,6 +34,7 @@ def serialize_task(task: Task) -> Dict:
         assignee=task.assignee.public_id,
         fee_on_assign=task.fee_on_assign,
         fee_on_complete=task.fee_on_complete,
+        jira_id=task.jira_id,
     )
     return asdict(dto)
 
@@ -88,9 +89,9 @@ def shuffle_tasks(request: HttpRequest):
         users = list(TaskTrackerUser.objects.filter(role='worker'))
         for task in task_queryset:
         
-            tasK_user = random.choice(users)    
+            task_user = random.choice(users)    
             previous_user_id = task.assignee.public_id
-            task.assignee = tasK_user
+            task.assignee = task_user
             task.save()
             
             task_dto = serialize_task(task)
