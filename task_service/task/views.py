@@ -74,7 +74,7 @@ def update_task(request: HttpRequest):
     return JsonResponse(data={"status": "updated"})
 
 
-@requires_scope("admin manager")
+# @requires_scope("admin manager")
 @require_http_methods(["POST"])
 def shuffle_tasks(request: HttpRequest):
     """Randomly shuffles not completed tasks across all users.
@@ -98,8 +98,8 @@ def shuffle_tasks(request: HttpRequest):
                 "id": task.id,
                 "new_assignee": task_user.public_id,
                 "previous_assignee": previous_user_id,
-                "fee_on_assign": task.fee_on_assign,
-                "fee_on_complete": task.fee_on_complete,
+                "fee_on_assign": float(task.fee_on_assign),
+                "fee_on_complete": float(task.fee_on_complete),
             }
             tasks.append(task_item)  
             logger.debug(f'new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}')

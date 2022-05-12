@@ -1,0 +1,89 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "task::tasks_assigned::2",
+	"description": "json schema for tasks_assigned event (version 2)",
+	"definitions": {
+		"data": {
+			"type": "object",
+			"properties": {
+				"tasks": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/reassigned_task"
+					}
+				}
+			},
+			"required": [
+				"tasks"
+			]
+		},
+		"reassigned_task": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "integer"
+				},
+				"assignee": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"fee_on_assign": {
+					"type": "number",
+					"format": "float"
+				},
+				"fee_on_complete": {
+					"type": "number",
+					"format": "float"
+				},
+				"previous_assignee": {
+					"type": "string",
+					"format": "uuid"
+				},
+				"new_assignee": {
+					"type": "string",
+					"format": "uuid"
+				}
+			},
+			"required": [
+				"id",
+				"previous_assignee",
+				"new_assignee",
+				"fee_on_assign",
+				"fee_on_complete"
+			]
+		}
+	},
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string",
+			"format": "uuid"
+		},
+		"version": {
+			"enum": [
+				2
+			]
+		},
+		"event_name": {
+			"type": "string"
+		},
+		"event_time": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"producer": {
+			"type": "string"
+		},
+		"data": {
+			"$ref": "#/definitions/data"
+		}
+	},
+	"required": [
+		"id",
+		"version",
+		"event_name",
+		"event_time",
+		"producer",
+		"data"
+	]
+}

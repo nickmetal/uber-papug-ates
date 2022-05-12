@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "task::task_created::2",
+  "description": "json schema for task_created event (version 2)",
+  "definitions": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "new"
+          ]
+        },
+        "assignee": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fee_on_assign": {
+          "type": "number",
+          "format": "float"
+        },
+        "fee_on_complete": {
+          "type": "number",
+          "format": "float"
+        },
+        "jira_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "title",
+        "description",
+        "status",
+        "assignee",
+        "fee_on_assign",
+        "fee_on_complete",
+        "jira_id"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "enum": [
+        2
+      ]
+    },
+    "event_name": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string"
+    },
+    "data": {
+      "$ref": "#/definitions/task"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "event_name",
+    "event_time",
+    "producer",
+    "data"
+  ]
+}

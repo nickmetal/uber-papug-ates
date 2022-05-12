@@ -131,9 +131,9 @@ class EventManager:
         
         service_2_domain_map = {
             'auth_service': 'account',
-            'account': 'account',
-            'analytics': 'analytics',
-            'task': 'task',
+            'account_service': 'account',
+            'analytics_service': 'analytics',
+            'task_service': 'task',
         }
         event_name_map = {
             "AccountCreated": "account_created",
