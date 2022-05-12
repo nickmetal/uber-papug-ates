@@ -94,8 +94,14 @@ def shuffle_tasks(request: HttpRequest):
             task.assignee = task_user
             task.save()
             
-            task_dto = serialize_task(task)
-            tasks.append(task_dto)  
+            task_item = {
+                "id": task.id,
+                "new_assignee": task_user.public_id,
+                "previous_assignee": previous_user_id,
+                "fee_on_assign": task.fee_on_assign,
+                "fee_on_complete": task.fee_on_complete,
+            }
+            tasks.append(task_item)  
             logger.debug(f'new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}')
 
     event = TasksAssignedEvent(data={"tasks": tasks})

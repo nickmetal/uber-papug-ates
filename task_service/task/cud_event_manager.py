@@ -36,7 +36,7 @@ class TaskCreatedEvent(TaskServiceCUDEvent):
 class TaskCompletedEvent(TaskServiceCUDEvent):
     data: dict
     """data:
-    {'id': id_, 'status': 'completed'}
+    {'id': id}
     """
     event_name: str = field(default="task_completed")
 
@@ -46,9 +46,10 @@ class TasksAssignedEvent(TaskServiceCUDEvent):
     data: dict
     """data:
     
-    {"tasks": [TaskDTO, ...]}
+    {"tasks": [{"id": 1, "assignee": "nick", "fee"}]}  # todo: update
     """
     event_name: str = field(default="tasks_assigned")
+    version: int = 2
 
 
 class EventManager:
