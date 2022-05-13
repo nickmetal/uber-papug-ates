@@ -71,6 +71,10 @@ def handle_task_completed(event: Dict):
         company_user = get_company_user()
         company_account = company_user.account_set.first()
         task = Task.objects.get(public_id=event["data"]["id"])
+        if task.status == 'completed':
+            logger.warning(f'{task=} already completed, skipping its processing')
+            return 
+
         assignee_account = task.assignee.account_set.first()
 
         trx_outcome = {
@@ -92,7 +96,7 @@ def handle_task_completed(event: Dict):
         trx_in = models.AccountTransaction(**trx_income)
         trx_in.save()
 
-        task.status = "complete"
+        task.status = "completed"
         task.save()
 
 
