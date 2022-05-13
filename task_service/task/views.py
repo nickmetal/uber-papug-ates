@@ -7,20 +7,25 @@ from django.http import HttpRequest, JsonResponse
 
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
+from django.conf import settings
 
 from task_service.access_control import requires_scope
 from task.models import Task, TaskDTO, TaskStatus
-from task.cud_event_manager import EventManager, TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
-from task.rabbit import RabbitMQClient
+from common_lib.cud_event_manager import EventManager
+from common_lib.rabbit import RabbitMQPublisher
 from task.models import TaskTrackerUser
+from task.event_models import TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
 
 
 logger = logging.getLogger(__name__)
 
 
-#TODO: instead of global clients do: add DI IoC:
+# TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
-event_manager = EventManager(mq_client=RabbitMQClient())
+event_manager = EventManager(
+    mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME),
+    schema_basedir=settings.EVENT_SCHEMA_DIR,
+)
 
 
 def serialize_task(task: Task) -> Dict:
@@ -51,49 +56,50 @@ def get_task(request: HttpRequest, task_id: int):
 def add_task(request: HttpRequest):
     # TODO: add form validation
     body = json.loads(request.body)
-    body['fee_on_assign'] = round(random.uniform(-10, -20), 2)
-    body['fee_on_complete'] = round(random.uniform(20, 40), 2)
-    body['assignee'] = TaskTrackerUser.objects.get(public_id=body['assignee'])
-    
+    body["fee_on_assign"] = round(random.uniform(-10, -20), 2)
+    body["fee_on_complete"] = round(random.uniform(20, 40), 2)
+    body["assignee"] = TaskTrackerUser.objects.get(public_id=body["assignee"])
+
     # TODO: check that user not manager/admin
     task = Task.objects.create(**body)
     response_data = serialize_task(task)
     event_manager.send_event(event=TaskCreatedEvent(data=response_data))
     return JsonResponse(data=response_data)
 
+
 @requires_scope("admin manager worker")
 @require_http_methods(["PUT"])
 def update_task(request: HttpRequest):
     """Is used by seeting complete status"""
     body = json.loads(request.body)
-    id_ = body['id']
+    id_ = body["id"]
     Task.objects.filter(id=id_).update(**body)
-    if body['status'] == 'completed':
-        data = {'id': id_, 'status': 'completed'}
+    if body["status"] == "completed":
+        data = {"id": id_, "status": "completed"}
         event_manager.send_event(event=TaskCompletedEvent(data=data))
     return JsonResponse(data={"status": "updated"})
 
 
-# @requires_scope("admin manager")
+@requires_scope("admin manager")
 @require_http_methods(["POST"])
 def shuffle_tasks(request: HttpRequest):
     """Randomly shuffles not completed tasks across all users.
-    
-    Note: probably has distribution transaction issue, need to redesign and fix that 
+
+    Note: probably has distribution transaction issue, need to redesign and fix that
     """
 
     tasks = []
     # TODO: think how to do random choise not in all-in-memory
     with transaction.atomic():
         task_queryset = Task.objects.select_for_update().filter(status=TaskStatus.NEW.value)
-        users = list(TaskTrackerUser.objects.filter(role='worker'))
+        users = list(TaskTrackerUser.objects.filter(role="worker"))
         for task in task_queryset:
-        
-            task_user = random.choice(users)    
+
+            task_user = random.choice(users)
             previous_user_id = task.assignee.public_id
             task.assignee = task_user
             task.save()
-            
+
             task_item = {
                 "id": task.id,
                 "new_assignee": task_user.public_id,
@@ -101,10 +107,10 @@ def shuffle_tasks(request: HttpRequest):
                 "fee_on_assign": float(task.fee_on_assign),
                 "fee_on_complete": float(task.fee_on_complete),
             }
-            tasks.append(task_item)  
-            logger.debug(f'new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}')
+            tasks.append(task_item)
+            logger.debug(f"new {task.assignee=} in {task=} due to shuffle operation. previous {previous_user_id}")
 
     event = TasksAssignedEvent(data={"tasks": tasks})
     event_manager.send_event(event=event)
-            
+
     return JsonResponse(data={"status": "shuffled", "tasks": tasks})

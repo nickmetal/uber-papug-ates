@@ -169,3 +169,9 @@ LOGGING = {
 }
 # main account for money charged from workers during task creation time
 COMPANY_SLUG = 'UberPopug Inc.'
+EVENT_SCHEMA_DIR = os.environ.get('EVENT_SCHEMA_DIR', BASE_DIR.parent / 'common_lib')
+TASKS_EXCHANGE_NAME = 'tasks-stream'
+AUTH_ACCOUNT_EXCHANGE_NAME = 'accounts-stream'
+AUTH_ACCOUNT_TASK_QUEUE = 'accounts-stream-to-task-service'
+AUTH_ACCOUNT_ACCOUNT_QUEUE = 'accounts-stream-to-account-service'
+TASKS_TO_ACCOUNT_QUEUE = 'tasks-stream-to-account-service'

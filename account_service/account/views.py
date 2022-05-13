@@ -2,16 +2,15 @@ import json
 import random
 import logging
 from typing import Dict
-from dataclasses import asdict
+
 from django.http import HttpRequest, JsonResponse
 
 from django.views.decorators.http import require_http_methods
-from django.db import transaction
 
 from account_service.access_control import requires_scope, get_default_session, get_user_info
 from account.models import Account
-from account.cud_event_manager import EventManager
-from account.rabbit import RabbitMQPublisher
+from common_lib.cud_event_manager import EventManager
+from common_lib.rabbit import RabbitMQPublisher
 from account.models import AccountUser
 
 

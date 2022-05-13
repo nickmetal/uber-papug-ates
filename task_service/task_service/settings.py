@@ -167,3 +167,8 @@ LOGGING = {
         },
     },
 }
+EVENT_SCHEMA_DIR = os.environ.get('EVENT_SCHEMA_DIR', BASE_DIR.parent / 'common_lib')
+COMPANY_SLUG = 'UberPopug Inc.'
+TASKS_EXCHANGE_NAME = 'tasks-stream'
+AUTH_ACCOUNT_EXCHANGE_NAME = 'accounts-stream'
+AUTH_ACCOUNT_TASK_QUEUE = 'accounts-stream-to-task-service'

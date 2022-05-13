@@ -1,8 +1,9 @@
 import json
 import logging
 from django.core.management.base import BaseCommand
-from account.rabbit import RabbitMQMultiConsumer, ConsumerConfig
-from account.cud_event_manager import EventManager
+from django.conf import settings
+from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
+from common_lib.cud_event_manager import EventManager
 from account import controllers
 
 
@@ -10,11 +11,11 @@ class Command(BaseCommand):
     help = "Consumes cud events from common message broker"
 
     def handle(self, *args, **options):
-        task_exchange = "task_stream"
-        task_queue = "task_to_account_queue"
+        task_exchange = settings.TASKS_EXCHANGE_NAME
+        task_queue = settings.TASKS_TO_ACCOUNT_QUEUE
 
-        auth_account_exchange = "accounts-stream"
-        auth_account_queue = "auth_account_to_account_queue"
+        auth_account_exchange = settings.AUTH_ACCOUNT_EXCHANGE_NAME
+        auth_account_queue = settings.AUTH_ACCOUNT_ACCOUNT_QUEUE
 
         # define rabbit queues to consume from
         consumers = [
@@ -35,7 +36,11 @@ class Command(BaseCommand):
                 "tasks_assigned": controllers.handle_tasks_assigned,
                 "account_created": controllers.handle_auth_account_created,
             }
-            EventManager(mq_publisher=None, event_router=event_router).consume_event(event)
+            EventManager(
+                mq_publisher=None,
+                event_router=event_router,
+                schema_basedir=settings.EVENT_SCHEMA_DIR,
+            ).consume_event(event)
         except:
             logging.exception("trace")
             self.stderr.write(self.style.ERROR(f"Un ack message: {body}"))
