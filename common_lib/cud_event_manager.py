@@ -4,16 +4,14 @@ import logging
 from typing import Dict
 from uuid import uuid4
 from schema.validator import Validator, get_schema
-from account.rabbit import RabbitMQPublisher
-
-from account.models import AccountUser
+from common_lib.rabbit import RabbitMQPublisher
 
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AccountCUDEvent:
+class CUDEvent:
     """Base CUD model for current service"""
 
     data: Dict
@@ -29,7 +27,10 @@ class EventManager:
     """Handles CUD events"""
 
     def __init__(
-        self, mq_publisher: RabbitMQPublisher, service_exchange_name: str = "account_stream", event_router: Dict = None
+        self,
+        mq_publisher: RabbitMQPublisher,
+        service_exchange_name: str = "account_stream",
+        event_router: Dict = None,
     ) -> None:
         self.mq_publisher = mq_publisher
         self.task_service_exchange_name = service_exchange_name
@@ -44,16 +45,18 @@ class EventManager:
         else:
             logger.debug(f"no callback provided for {event} specified")
 
-    def send_event(self, event: AccountCUDEvent):
+    def send_event(self, event: CUDEvent):
         try:
             logger.debug(f"sending: {event=} to {self.task_service_exchange_name=}")
             self._validate_event(event)
-            self.mq_publisher.publish(body=asdict(event), exchange_name=self.task_service_exchange_name)
+            self.mq_publisher.publish(
+                body=asdict(event), exchange_name=self.task_service_exchange_name
+            )
         except Exception:
             logger.exception(f"unable to send {event=}")
             raise
 
-    def _validate_event(self, event: AccountCUDEvent):
+    def _validate_event(self, event: CUDEvent):
         """Validates outcomming event againts schema based on event name and event version. Raises expetion on invalid event"""
         base_dir = "./"
         schema_path = f"{base_dir}schema/task/{event.event_name}/{event.version}.json"
