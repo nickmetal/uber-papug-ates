@@ -71,7 +71,9 @@ class AccountTransaction(BaseModel):
 
 class Task(BaseModel):
     title = models.CharField(max_length=250)
+    status = models.CharField(max_length=250)
     description = models.CharField(max_length=250)
     assignee = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
     fee_on_assign = models.DecimalField(max_digits=15, decimal_places=10)
     fee_on_complete = models.DecimalField(max_digits=15, decimal_places=10)
+    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)

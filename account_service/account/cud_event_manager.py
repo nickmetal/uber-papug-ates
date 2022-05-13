@@ -42,7 +42,7 @@ class EventManager:
         if cb:
             cb(event)
         else:
-            logger.debug(f"no callback for {event} specified")
+            logger.debug(f"no callback provided for {event} specified")
 
     def send_event(self, event: AccountCUDEvent):
         try:

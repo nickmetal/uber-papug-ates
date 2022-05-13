@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
-event_manager = EventManager(RabbitMQPublisher())
+# event_manager = EventManager(RabbitMQPublisher())
 
 
 def get_worker_dashboard(request) -> Dict:

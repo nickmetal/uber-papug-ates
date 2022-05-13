@@ -71,19 +71,17 @@ class EventManager:
         self._validate_incomming_event(event)
         event_name = event["event_name"]
         if event_name == "AccountCreated":
-            event["data"].pop("id", None)
             role = event["data"].get('position') or 'worker'
-            public_id = event["data"].get('public_id') or 'test_id'  # TODO: make sure we receive public_id in the event
+            public_id = event["data"].get('public_id')
             django_user = {
                 "email": event["data"]["email"],
-                "username": event["data"]["full_name"] or event["data"]["email"],
+                "username": event["data"]["email"],
                 "is_staff": True,
                 "role": role,
                 "public_id": public_id,
             }
             logger.debug(f'{django_user}=')
-            user = TaskTrackerUser(**django_user)
-            user.save()
+            TaskTrackerUser.objects.create(**django_user)
             logger.info(f"added new django user: {django_user=}")
         elif event_name == "AccountUpdated":
             event["data"].pop("id", None)
@@ -91,7 +89,7 @@ class EventManager:
             public_id = event["data"].get('public_id') or 'test_id'  # TODO: make sure we receive public_id in the event
             django_user = {
                 "email": event["data"]["email"],
-                "username": event["data"]["full_name"],
+                "username": event["data"]["email"],
                 "is_staff": True,
                 "role": role,
                 "public_id": public_id,

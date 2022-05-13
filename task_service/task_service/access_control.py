@@ -63,7 +63,7 @@ def requires_scope(required_scope=None):
         @wraps(f)
         def decorated(*args, **kwargs):
             request = args[0]
-            token = get_token_auth_header(request=request) or get_token_session(request=request)
+            token = get_token_auth_header(request=request)# or get_token_session(request=request)
             if required_scope and token is None:
                 logger.debug('redirecting to login')
                 required_scopes = required_scope or ''
