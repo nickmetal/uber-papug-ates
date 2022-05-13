@@ -57,7 +57,7 @@ class ConsumerConfig:
     queue: str
     callback: Callable
     exchange_type: str = "fanout"
-    
+
     def __hash__(self) -> int:
         return hash(self.exchange) + hash(self.queue)
 
@@ -65,7 +65,9 @@ class ConsumerConfig:
 class RabbitMQMultiConsumer:
     """Allows to attach multiple consumers for multiple exchange/queue pairs"""
 
-    def __init__(self, dsn: str = settings.RABBITMQ_DSN, consumers: List[ConsumerConfig] = None, auto_ack: bool = False) -> None:
+    def __init__(
+        self, dsn: str = settings.RABBITMQ_DSN, consumers: List[ConsumerConfig] = None, auto_ack: bool = False
+    ) -> None:
         self.dsn = dsn
         self.consumers = consumers or []
         self._connections = {}
@@ -79,7 +81,7 @@ class RabbitMQMultiConsumer:
     def on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""
         for consumer in self.consumers:
-            logger.debug(f'creating channel for {consumer=}')
+            logger.debug(f"creating channel for {consumer=}")
             connection.channel(on_open_callback=partial(self.on_channel_open, consumer=consumer))
 
     def on_channel_open(self, channel, consumer: ConsumerConfig):
@@ -93,7 +95,7 @@ class RabbitMQMultiConsumer:
             callback=partial(self.on_queue_declared, consumer=consumer),
         )
         channel.queue_bind(exchange=consumer.exchange, queue=consumer.queue)
-        
+
     def _custom_ack(self, ch, method, properties, body, consumer_cb: Callable):
         consumer_cb(ch, method, properties, body)
         ch.basic_ack(method.delivery_tag)

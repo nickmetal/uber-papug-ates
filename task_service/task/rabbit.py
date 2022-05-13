@@ -6,7 +6,7 @@ from django.conf import settings
 
 class RabbitMQClient:
     def __init__(
-        self, queue="account_events", exchange_name="accounts-stream", dsn: str = settings.RABBITMQ_DSN
+        self, queue="task_service", exchange_name="accounts-stream", dsn: str = settings.RABBITMQ_DSN
     ) -> None:
         self.queue_name = queue
         self.exchange_name = exchange_name
