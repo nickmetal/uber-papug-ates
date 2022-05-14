@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from django.conf import settings
 
-from task_service.access_control import requires_scope
+from common_lib.access_control import requires_scope
 from task.models import Task, TaskDTO, TaskStatus
 from common_lib.cud_event_manager import EventManager
 from common_lib.rabbit import RabbitMQPublisher

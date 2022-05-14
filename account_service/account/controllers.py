@@ -1,4 +1,5 @@
 from copy import deepcopy
+from decimal import Decimal
 from logging import getLogger
 from typing import Dict
 from account import models
@@ -24,6 +25,12 @@ def handle_task_created(event: Dict = 1):
         company_user = get_company_user()
         company_account = company_user.account_set.first()
         assignee_account = Account.objects.get(user__public_id=event["data"]["assignee"])
+        
+        company_account.amount += Decimal(abs(event["data"]["fee_on_assign"]))
+        company_account.save()
+        
+        assignee_account.amount -= Decimal(abs(event["data"]["fee_on_assign"]))
+        assignee_account.save()
 
         task_title = event["data"]["title"]
         trx_outcome = {
@@ -76,6 +83,11 @@ def handle_task_completed(event: Dict):
             return 
 
         assignee_account = task.assignee.account_set.first()
+        company_account.amount -= Decimal(abs(event["data"]["fee_on_complete"]))
+        company_account.save()
+        
+        assignee_account.amount += Decimal(abs(event["data"]["fee_on_complete"]))
+        assignee_account.save()
 
         trx_outcome = {
             "amount": task.fee_on_complete,

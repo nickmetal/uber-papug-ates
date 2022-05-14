@@ -55,10 +55,8 @@ class BaseModel(models.Model):
 
 class Account(BaseModel):
     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     
-    def get_total(self, as_of: datetime = None) -> float:
-        return self.account_transaction_set.all()
-
 
 class AccountTransaction(BaseModel):
     currency = models.CharField(default='US DOLLAR', max_length=100)
