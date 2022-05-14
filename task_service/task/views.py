@@ -102,6 +102,10 @@ def shuffle_tasks(request: HttpRequest):
 
             task_item = {
                 "id": task.id,
+                # "created_at": task.created_at,
+                # "updated_at": task.updated_at,
+                # "title": task.title,
+                # "description": task.description,
                 "new_assignee": task_user.public_id,
                 "previous_assignee": previous_user_id,
                 "fee_on_assign": float(task.fee_on_assign),

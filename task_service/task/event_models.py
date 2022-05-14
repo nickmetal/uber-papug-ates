@@ -16,7 +16,6 @@ class TaskServiceCUDEvent:
     id: uuid4 = field(default_factory=uuid4)
     version: int = field(default=1)
     event_name: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
-    producer: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     event_time: datetime = field(default_factory=datetime.utcnow)
     producer: str = field(default="task_service")
     

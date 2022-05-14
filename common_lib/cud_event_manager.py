@@ -21,7 +21,6 @@ class CUDEvent:
     event_name: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     producer: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     event_time: datetime = field(default_factory=datetime.utcnow)
-    producer: str = field(default="task_service")
 
 
 class EventManager:

@@ -8,9 +8,26 @@ from django.conf import settings
 from django.db import transaction
 
 from account.models import Task
+from common_lib.cud_event_manager import CUDEvent, EventManager
+from common_lib.rabbit import RabbitMQPublisher
 
 
 logger = getLogger(__name__)
+
+
+event_manager = EventManager(
+    mq_publisher=RabbitMQPublisher(exchange_name=settings.BILLING_EXCHANGE_NAME),
+    schema_basedir=settings.EVENT_SCHEMA_DIR,
+)
+
+def send_account_change_event(event_manager, public_id, amount):
+    event_manager.send_event(
+        event=CUDEvent(
+            data={"public_id": public_id, "amount": amount},
+            producer='account_service',
+            event_name="billing_account_changed",
+        )
+    )
 
 
 def handle_task_created(event: Dict = 1):
@@ -25,13 +42,16 @@ def handle_task_created(event: Dict = 1):
         company_user = get_company_user()
         company_account = company_user.account_set.first()
         assignee_account = Account.objects.get(user__public_id=event["data"]["assignee"])
-        
-        company_account.amount += Decimal(abs(event["data"]["fee_on_assign"]))
-        company_account.save()
-        
-        assignee_account.amount -= Decimal(abs(event["data"]["fee_on_assign"]))
-        assignee_account.save()
 
+        company_income = abs(event["data"]["fee_on_assign"])
+        company_account.amount += Decimal(company_income)
+        company_account.save()
+        send_account_change_event(event_manager, company_account.public_id, company_income)
+
+        assignee_account.amount -= Decimal(company_income)
+        assignee_account.save()
+        send_account_change_event(event_manager, assignee_account.public_id, -company_income)
+        
         task_title = event["data"]["title"]
         trx_outcome = {
             "public_id": event["data"]["id"],
@@ -78,15 +98,13 @@ def handle_task_completed(event: Dict):
         company_user = get_company_user()
         company_account = company_user.account_set.first()
         task = Task.objects.get(public_id=event["data"]["id"])
-        if task.status == 'completed':
-            logger.warning(f'{task=} already completed, skipping its processing')
-            return 
 
+        company_income = abs(event["data"]["fee_on_complete"])
         assignee_account = task.assignee.account_set.first()
-        company_account.amount -= Decimal(abs(event["data"]["fee_on_complete"]))
+        company_account.amount -= Decimal(company_income)
         company_account.save()
-        
-        assignee_account.amount += Decimal(abs(event["data"]["fee_on_complete"]))
+
+        assignee_account.amount += Decimal(company_income)
         assignee_account.save()
 
         trx_outcome = {
@@ -110,6 +128,9 @@ def handle_task_completed(event: Dict):
 
         task.status = "completed"
         task.save()
+        
+    send_account_change_event(event_manager, company_account.public_id, -company_income)
+    send_account_change_event(event_manager, assignee_account.public_id, company_income)
 
 
 def handle_tasks_assigned(event: Dict):
@@ -130,6 +151,7 @@ def handle_tasks_assigned(event: Dict):
             task = Task.objects.get(public_id=shuffled_task["id"])
             new_assignee = AccountUser.objects.get(public_id=shuffled_task["new_assignee"])
             assignee_account = new_assignee.account_set.first()
+            company_income = abs(shuffled_task["fee_on_assign"])
 
             task.assignee = new_assignee
             task.save()
@@ -152,11 +174,20 @@ def handle_tasks_assigned(event: Dict):
 
             trx_in = models.AccountTransaction(**trx_income)
             transactions_to_insert.append(trx_in)
+
+            company_account.amount += Decimal(company_income)
+            assignee_account.amount -= Decimal(company_income)
             
+            send_account_change_event(event_manager, company_account.public_id, company_income)
+            send_account_change_event(event_manager, assignee_account.public_id, -company_income)
+
+        assignee_account.save()
+        company_account.save()
+
         models.AccountTransaction.objects.bulk_create(transactions_to_insert)
-        
-        logger.debug(f'updated tasks {len(shuffled_tasks)}')
-        logger.debug(f'added transactions {len(transactions_to_insert)}')
+
+        logger.debug(f"updated tasks {len(shuffled_tasks)}")
+        logger.debug(f"added transactions {len(transactions_to_insert)}")
 
 
 def handle_auth_account_created(event: Dict):
@@ -182,6 +213,8 @@ def handle_auth_account_created(event: Dict):
             account = Account(user=user)
             account.save()
             logger.info(f"added new {account=}")
+            
+        send_account_change_event(event_manager, account.public_id, 0)
 
 
 def get_company_user() -> AccountUser:
