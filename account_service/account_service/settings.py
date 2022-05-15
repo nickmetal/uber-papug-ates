@@ -176,3 +176,6 @@ AUTH_ACCOUNT_TASK_QUEUE = 'accounts-stream-to-task-service'
 AUTH_ACCOUNT_ACCOUNT_QUEUE = 'accounts-stream-to-account-service'
 BILLING_EXCHANGE_NAME = 'billing-account-stream'
 TASKS_TO_ACCOUNT_QUEUE = 'tasks-stream-to-account-service'
+MONGO_DSN = os.environ['MONGO_DSN']
+MONGO_DB_NAME = os.environ['MONGO_DB_NAME']
+MONGO_ERROR_COLLECTION = os.environ['MONGO_ERROR_COLLECTION']

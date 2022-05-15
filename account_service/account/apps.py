@@ -2,7 +2,7 @@ from logging import getLogger
 from django.apps import AppConfig
 from django.conf import settings
 
-from common_lib.cud_event_manager import CUDEvent, EventManager
+from common_lib.cud_event_manager import CUDEvent, EventManager, ServiceName
 from common_lib.rabbit import RabbitMQPublisher
 
 
@@ -24,6 +24,7 @@ class AccountConfig(AppConfig):
                 event_manager = EventManager(
                     mq_publisher=RabbitMQPublisher(exchange_name=settings.BILLING_EXCHANGE_NAME),
                     schema_basedir=settings.EVENT_SCHEMA_DIR,
+                    service_name=ServiceName.ACCOUNT_SERVICE,
                 )
                 logger.info(f"created company {company_account=}, {company_user=}")
                 event_manager.send_event(

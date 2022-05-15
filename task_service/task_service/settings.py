@@ -172,3 +172,6 @@ COMPANY_SLUG = 'UberPopug Inc.'
 TASKS_EXCHANGE_NAME = 'tasks-stream'
 AUTH_ACCOUNT_EXCHANGE_NAME = 'accounts-stream'
 AUTH_ACCOUNT_TASK_QUEUE = 'accounts-stream-to-task-service'
+MONGO_DSN = os.environ['MONGO_DSN']
+MONGO_DB_NAME = os.environ['MONGO_DB_NAME']
+MONGO_ERROR_COLLECTION = os.environ['MONGO_ERROR_COLLECTION']

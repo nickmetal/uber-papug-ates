@@ -11,7 +11,7 @@ from django.conf import settings
 
 from common_lib.access_control import requires_scope
 from task.models import Task, TaskDTO, TaskStatus
-from common_lib.cud_event_manager import EventManager
+from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 from common_lib.rabbit import RabbitMQPublisher
 from task.models import TaskTrackerUser
 from task.event_models import TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
@@ -22,9 +22,16 @@ logger = logging.getLogger(__name__)
 
 # TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
+failed_events_manager = FailedEventManager.build(
+    mongo_dsn=settings.MONGO_DSN,
+    db_name=settings.MONGO_DB_NAME,
+    error_collection_name=settings.MONGO_ERROR_COLLECTION,
+)
 event_manager = EventManager(
     mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME),
     schema_basedir=settings.EVENT_SCHEMA_DIR,
+    service_name=ServiceName.TASK_SERVICE,
+    failed_events_manager=failed_events_manager,
 )
 
 

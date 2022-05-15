@@ -2,22 +2,29 @@ from copy import deepcopy
 from decimal import Decimal
 from logging import getLogger
 from typing import Dict
-from account import models
-from account.models import Account, AccountUser, TransactionType
+
+from common_lib.cud_event_manager import (CUDEvent, EventManager,
+                                          FailedEventManager, ServiceName)
+from common_lib.rabbit import RabbitMQPublisher
 from django.conf import settings
 from django.db import transaction
 
-from account.models import Task
-from common_lib.cud_event_manager import CUDEvent, EventManager
-from common_lib.rabbit import RabbitMQPublisher
+from account import models
+from account.models import Account, AccountUser, Task, TransactionType
 
 
 logger = getLogger(__name__)
 
-
+failed_events_manager = FailedEventManager.build(
+    mongo_dsn=settings.MONGO_DSN,
+    db_name=settings.MONGO_DB_NAME,
+    error_collection_name=settings.MONGO_ERROR_COLLECTION,
+)
 event_manager = EventManager(
     mq_publisher=RabbitMQPublisher(exchange_name=settings.BILLING_EXCHANGE_NAME),
     schema_basedir=settings.EVENT_SCHEMA_DIR,
+    service_name=ServiceName.ACCOUNT_SERVICE,
+    failed_events_manager=failed_events_manager,
 )
 
 def send_account_change_event(event_manager, public_id, amount):
