@@ -23,13 +23,13 @@ event_manager = EventManager(
 def send_account_change_event(event_manager, public_id, amount):
     event_manager.send_event(
         event=CUDEvent(
-            data={"public_id": public_id, "amount": amount},
+            data={"public_id": public_id, "amount": float(amount)},
             producer='account_service',
             event_name="billing_account_changed",
         )
     )
-
-
+    
+    
 def handle_task_created(event: Dict = 1):
     """Handles task creation event
 
@@ -46,11 +46,9 @@ def handle_task_created(event: Dict = 1):
         company_income = abs(event["data"]["fee_on_assign"])
         company_account.amount += Decimal(company_income)
         company_account.save()
-        send_account_change_event(event_manager, company_account.public_id, company_income)
 
         assignee_account.amount -= Decimal(company_income)
         assignee_account.save()
-        send_account_change_event(event_manager, assignee_account.public_id, -company_income)
         
         task_title = event["data"]["title"]
         trx_outcome = {
@@ -84,6 +82,9 @@ def handle_task_created(event: Dict = 1):
 
         task = Task.objects.create(**task_info)
         task.save()
+        
+        send_account_change_event(event_manager, company_account.public_id, company_income)
+        send_account_change_event(event_manager, assignee_account.public_id, -company_income)
 
 
 def handle_task_completed(event: Dict):
@@ -99,7 +100,7 @@ def handle_task_completed(event: Dict):
         company_account = company_user.account_set.first()
         task = Task.objects.get(public_id=event["data"]["id"])
 
-        company_income = abs(event["data"]["fee_on_complete"])
+        company_income = abs(task.fee_on_complete)
         assignee_account = task.assignee.account_set.first()
         company_account.amount -= Decimal(company_income)
         company_account.save()
@@ -209,12 +210,25 @@ def handle_auth_account_created(event: Dict):
             logger.info(f"added new {user=}")
 
         accounts = list(Account.objects.filter(user__public_id=user_info["public_id"]))
-        if not accounts:
+        if accounts:
+            account = accounts[0]
+        else:
             account = Account(user=user)
             account.save()
             logger.info(f"added new {account=}")
             
-        send_account_change_event(event_manager, account.public_id, 0)
+            
+        event_manager.send_event(
+            CUDEvent(
+                data={
+                    "account_public_id": account.public_id,
+                    "user_public_id": user.public_id,
+                    "role": user.role,
+                },
+                producer="account_service",
+                event_name="billing_account_created",
+            )
+        )    
 
 
 def get_company_user() -> AccountUser:

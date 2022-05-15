@@ -42,7 +42,8 @@ class Command(BaseCommand):
                 "task_created": controllers.handle_task_created,
                 "task_completed": controllers.handle_task_completed,
                 "account_created": controllers.handle_auth_account_created,
-                "billing_account_changed": controllers.handle_account_changed,
+                "billing_account_created": controllers.handle_billing_account_created,
+                "billing_account_changed": controllers.handle_billing_account_changed,
             }
             EventManager(
                 mq_publisher=None,
