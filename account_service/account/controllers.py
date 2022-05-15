@@ -15,7 +15,7 @@ from account.models import Account, AccountUser, Task, TransactionType
 
 logger = getLogger(__name__)
 
-failed_events_manager = FailedEventManager.build(
+failed_event_manager = FailedEventManager.build(
     mongo_dsn=settings.MONGO_DSN,
     db_name=settings.MONGO_DB_NAME,
     error_collection_name=settings.MONGO_ERROR_COLLECTION,
@@ -24,7 +24,7 @@ event_manager = EventManager(
     mq_publisher=RabbitMQPublisher(exchange_name=settings.BILLING_EXCHANGE_NAME),
     schema_basedir=settings.EVENT_SCHEMA_DIR,
     service_name=ServiceName.ACCOUNT_SERVICE,
-    failed_events_manager=failed_events_manager,
+    failed_event_manager=failed_event_manager,
 )
 
 def send_account_change_event(event_manager, public_id, amount):

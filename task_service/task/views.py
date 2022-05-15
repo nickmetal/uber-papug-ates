@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
-failed_events_manager = FailedEventManager.build(
+failed_event_manager = FailedEventManager.build(
     mongo_dsn=settings.MONGO_DSN,
     db_name=settings.MONGO_DB_NAME,
     error_collection_name=settings.MONGO_ERROR_COLLECTION,
@@ -31,7 +31,7 @@ event_manager = EventManager(
     mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME),
     schema_basedir=settings.EVENT_SCHEMA_DIR,
     service_name=ServiceName.TASK_SERVICE,
-    failed_events_manager=failed_events_manager,
+    failed_event_manager=failed_event_manager,
 )
 
 
