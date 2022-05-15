@@ -1,1 +1,0 @@
-files were taken from auth_service_external/popug-inventory/event_schema_registry/ruby/lib/schema_registry
