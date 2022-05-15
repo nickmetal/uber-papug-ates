@@ -12,7 +12,7 @@
 ```sh
 git clone https://github.com/davydovanton/popug-inventory.git
 cd popug-inventory
-git checkout 987fd44
+git checkout 967fb2d
 cd docker-composes/rabbitmq
 docker-compose up --build
 # open localhost:3000

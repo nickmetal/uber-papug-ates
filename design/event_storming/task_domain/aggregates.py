@@ -31,8 +31,6 @@ class BaseEntity:
     id: int  # snowflake id
     created_at: datetime
 
-    # incremental model version for forward and backward compatibility
-    # version: int = field(default=1)
 
 
 @dataclass
