@@ -17,6 +17,10 @@ export OAUTH_ACCONT_INFO_URL=http://localhost:3000/accounts/current
 export OAUTHLIB_INSECURE_TRANSPORT=1  # for local dev only, needs to have tls
 export RABBITMQ_DSN=localhost
 
+export MONGO_DSN=
+export MONGO_DB_NAME=papug_jira
+export MONGO_ERROR_COLLECTION=errors
+
 # 2. start auth service + message broken
 # 3. start task service
 # 4. start account service
