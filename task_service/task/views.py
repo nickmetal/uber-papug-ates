@@ -16,9 +16,28 @@ from common_lib.rabbit import RabbitMQPublisher
 from task.models import TaskTrackerUser
 from task.event_models import TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
 
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+    OTLPMetricExporter,
+)
+from opentelemetry.metrics import (
+    get_meter_provider,
+    set_meter_provider,
+)
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
 
 logger = logging.getLogger(__name__)
 
+
+exporter = OTLPMetricExporter(insecure=True)
+reader = PeriodicExportingMetricReader(exporter)
+provider = MeterProvider(metric_readers=[reader])
+set_meter_provider(provider)
+meter = get_meter_provider().get_meter("task_service", "0.1.2")
+task_counter = meter.create_up_down_counter("task_counter")
+task_counter.add(1)
+task_counter.add(1)
 
 # TODO: instead of global clients do: add DI IoC:
 # https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
@@ -33,6 +52,7 @@ event_manager = EventManager(
     service_name=ServiceName.TASK_SERVICE,
     failed_event_manager=failed_event_manager,
 )
+
 
 
 def serialize_task(task: Task) -> Dict:
@@ -70,6 +90,7 @@ def add_task(request: HttpRequest):
     # TODO: check that user not manager/admin
     task = Task.objects.create(**body)
     response_data = serialize_task(task)
+    task_counter.add(1)
     event_manager.send_event(event=TaskCreatedEvent(data=response_data))
     return JsonResponse(data=response_data)
 

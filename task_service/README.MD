@@ -1,0 +1,1 @@
+OTEL_RESOURCE_ATTRIBUTES=service.name=task_service OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"  opentelemetry-instrument --traces_exporter otlp_proto_http python manage.py runserver 0.0.0.0:7777
