@@ -44,10 +44,12 @@ class Command(BaseCommand):
         )
         self.rmq_client.listen()
 
-    def handle_rabbitmq_message(self, ch, method, properties, body):
+    def handle_rabbitmq_message(self, ch, method, properties, body: bytes):
         try:
             event = json.loads(body)
             self.event_manager.consume_event(event)
-        except:
+        except json.decoder.JSONDecodeError as e:
+            logging.error(f"Bad json data receieved: {e=}, {e.doc=}")
+        except Exception:
             logging.exception("trace")
             self.stderr.write(self.style.ERROR(f"Un ack message: {body}"))
