@@ -3,8 +3,7 @@ from decimal import Decimal
 from logging import getLogger
 from typing import Dict
 
-from common_lib.cud_event_manager import (CUDEvent, EventManager,
-                                          FailedEventManager, ServiceName)
+from common_lib.cud_event_manager import CUDEvent, EventManager, FailedEventManager, ServiceName
 from common_lib.rabbit import RabbitMQPublisher
 from django.conf import settings
 from django.db import transaction
@@ -25,19 +24,21 @@ event_manager = EventManager(
     schema_basedir=settings.EVENT_SCHEMA_DIR,
     service_name=ServiceName.ACCOUNT_SERVICE,
     failed_event_manager=failed_event_manager,
+    offset_manager=None,
 )
+
 
 def send_account_change_event(event_manager, public_id, amount):
     event_manager.send_event(
         event=CUDEvent(
             data={"public_id": public_id, "amount": float(amount)},
-            producer='account_service',
+            producer="account_service",
             event_name="billing_account_changed",
         )
     )
-    
-    
-def handle_task_created(event: Dict = 1):
+
+
+def handle_task_created(event: Dict):
     """Handles task creation event
 
     steps:
@@ -56,7 +57,7 @@ def handle_task_created(event: Dict = 1):
 
         assignee_account.amount -= Decimal(company_income)
         assignee_account.save()
-        
+
         task_title = event["data"]["title"]
         trx_outcome = {
             "public_id": event["data"]["id"],
@@ -89,7 +90,7 @@ def handle_task_created(event: Dict = 1):
 
         task = Task.objects.create(**task_info)
         task.save()
-        
+
         send_account_change_event(event_manager, company_account.public_id, company_income)
         send_account_change_event(event_manager, assignee_account.public_id, -company_income)
 
@@ -136,7 +137,7 @@ def handle_task_completed(event: Dict):
 
         task.status = "completed"
         task.save()
-        
+
     send_account_change_event(event_manager, company_account.public_id, -company_income)
     send_account_change_event(event_manager, assignee_account.public_id, company_income)
 
@@ -185,7 +186,7 @@ def handle_tasks_assigned(event: Dict):
 
             company_account.amount += Decimal(company_income)
             assignee_account.amount -= Decimal(company_income)
-            
+
             send_account_change_event(event_manager, company_account.public_id, company_income)
             send_account_change_event(event_manager, assignee_account.public_id, -company_income)
 
@@ -223,8 +224,7 @@ def handle_auth_account_created(event: Dict):
             account = Account(user=user)
             account.save()
             logger.info(f"added new {account=}")
-            
-            
+
         event_manager.send_event(
             CUDEvent(
                 data={
@@ -235,7 +235,7 @@ def handle_auth_account_created(event: Dict):
                 producer="account_service",
                 event_name="billing_account_created",
             )
-        )    
+        )
 
 
 def get_company_user() -> AccountUser:

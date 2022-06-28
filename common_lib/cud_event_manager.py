@@ -4,11 +4,13 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Callable, Dict, List, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from pymongo.collection import Collection
 from pymongo.mongo_client import MongoClient
+from dateutil import parser
 
+from common_lib.offset_mager import OffsetLogManager, Offset
 from common_lib.rabbit import RabbitMQPublisher
 from common_lib.schema.validator import Validator, get_schema
 
@@ -20,14 +22,10 @@ class CUDEvent:
     """Base CUD model for current service"""
 
     data: Dict
-    id: uuid4 = field(default_factory=uuid4)
+    event_id: UUID = field(default_factory=uuid4)
     version: int = field(default=1)
-    event_name: str = field(
-        default="<not_set>"
-    )  # <not_set> is dataclass issue, implementation workaround
-    producer: str = field(
-        default="<not_set>"
-    )  # <not_set> is dataclass issue, implementation workaround
+    event_name: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
+    producer: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     event_time: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -41,9 +39,7 @@ class ServiceName(Enum):
 class FailedEventManager:
     """Handles events that were failed during publish/consume stages"""
 
-    def __init__(
-        self, error_collection: Collection
-    ) -> None:
+    def __init__(self, error_collection: Collection) -> None:
         self.error_collection = error_collection
 
     @classmethod
@@ -68,9 +64,7 @@ class FailedEventManager:
         }
         self._store_event(error_event)
 
-    def store_failed_consume_event(
-        self, exception: Exception, origin_event: Dict, consumer: ServiceName
-    ):
+    def store_failed_consume_event(self, exception: Exception, origin_event: Dict, consumer: ServiceName):
         error_event = {
             "consumer": consumer.value,
             "origin_event": origin_event,
@@ -101,8 +95,9 @@ class FailedEventManager:
     def process_failed_events_by_consumer(self, service_name: ServiceName, event_router: Dict[str, Callable]):
         consume_events = self.read_consume_events_by_service(service_name=service_name)
         for event in consume_events:
-            logger.info(f"processing faield eventfor {service_name=}, {event=}")
-            callback = event_router[event["event_name"]]
+            logger.info(f"processing faield event for {service_name=}, {event=}")
+            event_name = EventManager._normilize_event_name(event["origin_event"])
+            callback = event_router[event_name]
             try:
                 callback(event["origin_event"])
             except Exception as e:
@@ -120,13 +115,15 @@ class EventManager:
         schema_basedir: str,
         failed_event_manager: FailedEventManager,
         service_name: ServiceName,
-        event_router: Dict = None,
+        offset_manager: OffsetLogManager,
+        event_router: Optional[Dict] = None,
     ) -> None:
         self.mq_publisher = mq_publisher
         self.event_router = event_router or {}
         self.schema_basedir = schema_basedir
         self.failed_event_manager = failed_event_manager
         self.service_name = service_name
+        self.offset_manager = offset_manager
 
     def consume_event(self, event: Dict):
         logger.debug(f"{event=}")
@@ -134,14 +131,21 @@ class EventManager:
         if cb:
             try:
                 self._validate_incomming_event(event)
-                cb(event)
+                offset = self.offset_manager.get_offet()
+                if self._is_event_matches_offset(offset=offset, event=event):
+                    cb(event)
+                    new_offset = Offset(message_id=str(event["event_id"]), created_at=parser.parse(event["event_time"]))
+                    self.offset_manager.set_offset(new_offset)
+                else:
+                    logger.debug(f"skipping {event} due to {offset}")
+
             except Exception as e:
                 logger.exception(f"consume callback({cb=}) failed during {event=}")
                 self.failed_event_manager.store_failed_consume_event(
                     exception=e, origin_event=event, consumer=self.service_name
                 )
         else:
-            logger.debug(f"no callback provided for {event} specified")
+            logger.warning(f"no callback provided for {event=} specified")
 
     def send_event(self, event: CUDEvent):
         try:
@@ -150,9 +154,7 @@ class EventManager:
             self.mq_publisher.publish(body=asdict(event))
         except Exception as e:
             logger.exception(f"unable to send {event=}")
-            self.failed_event_manager.store_failed_produce_event(
-                exception=e, origin_event=asdict(event)
-            )
+            self.failed_event_manager.store_failed_produce_event(exception=e, origin_event=asdict(event))
 
     # TODO: create 1 validation method instead of 2
     def _validate_event(self, event: CUDEvent):
@@ -173,18 +175,20 @@ class EventManager:
         logger.debug(f"cache usage stats: {get_schema.cache_info()=}")
 
     def _validate_incomming_event(self, event: Dict):
-        """Validates incomming event againts schema based on event name and event version. Raises expetion on invalid event"""
+        """
+        Validates incomming event againts schema based on event name and event version.
+        Raises expetion on invalid event
+        """
         domain = self._get_domain_by_producer_name(event["producer"])
         event_version = event.get("event_version") or event.get("version")
         event_name = self._normilize_event_name(event)
-        schema_path = os.path.join(
-            self.schema_basedir, f"schema/{domain}/{event_name}/{event_version}.json"
-        )
+        schema_path = os.path.join(self.schema_basedir, f"schema/{domain}/{event_name}/{event_version}.json")
         validator = Validator(schema_path=schema_path)
         validator.validate(data=event)
         logger.debug(f"cache usage: {get_schema.cache_info()=}")
 
-    def _normilize_event_name(self, event: Dict) -> str:
+    @classmethod
+    def _normilize_event_name(cls, event: Dict) -> str:
         """Maps events from external services to the common format"""
         event_name_map = {
             "AccountCreated": "account_created",
@@ -206,3 +210,12 @@ class EventManager:
         if domain:
             return domain
         raise ValueError(f"Unknown {producer=}")
+
+    def _is_event_matches_offset(self, offset: Optional[Offset], event: Dict) -> bool:
+        # ready all data from distr log since offset is empty
+        if not offset:
+            return True
+
+        # TODO: add proper TZ handling
+        event_time = parser.parse(event["event_time"]).replace(tzinfo=None)
+        return event_time > offset.created_at.replace(tzinfo=None)

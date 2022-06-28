@@ -1,46 +1,57 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-  
-    "title": "account::billing_account_changed::1",
-    "description": "json schema for billing_account_changed event (version 1)",
-  
-    "definitions": {
-      "data": {
-        "type": "object",
-        "properties": {
-          "public_id": {
-            "type": "string", "format": "uuid"
-          },
-          "amount": {
-            "type": "number", "format": "float"
-          }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "account::billing_account_changed::1",
+  "description": "json schema for billing_account_changed event (version 1)",
+  "definitions": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "public_id": {
+          "type": "string",
+          "format": "uuid"
         },
-        "required": [
-          "public_id",
-          "amount"
-        ]
-      }
+        "amount": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "required": [
+        "public_id",
+        "amount"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
     },
-  
-    "type": "object",
-  
-    "properties": {
-      "id":      { "type": "string", "format": "uuid" },
-      "version": { "enum": [1] },
-      "event_name":    { "type": "string" },
-      "event_time":    { "type": "string", "format": "date-time" },
-      "producer":      { "type": "string" },
-  
-      "data": { "$ref": "#/definitions/data" }
+    "version": {
+      "enum": [
+        1
+      ]
     },
-  
-    "required": [
-      "id",
-      "version",
-      "event_name",
-      "event_time",
-      "producer",
-      "data"
-    ]
-  }
-  
+    "event_name": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string"
+    },
+    "data": {
+      "$ref": "#/definitions/data"
+    }
+  },
+  "required": [
+    "event_id",
+    "version",
+    "event_name",
+    "event_time",
+    "producer",
+    "data"
+  ]
+}

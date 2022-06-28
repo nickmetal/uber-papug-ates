@@ -60,7 +60,7 @@
   },
   "type": "object",
   "properties": {
-    "id": {
+    "event_id": {
       "type": "string",
       "format": "uuid"
     },
@@ -84,7 +84,7 @@
     }
   },
   "required": [
-    "id",
+    "event_id",
     "version",
     "event_name",
     "event_time",

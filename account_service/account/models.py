@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 @dataclass
 class BaseEntity:
     """Base class for domain entity"""
+
     id: int  # snowflake id
     created_at: datetime
     updated_at: datetime
@@ -25,14 +26,14 @@ class AccountUser(User):
 
 
 class TransactionType(Enum):
-    INCOME = 'income'
-    OUTCOME = 'outcome'
+    INCOME = "income"
+    OUTCOME = "outcome"
 
 
 @dataclass
 class TransactionDTO(BaseEntity):
     type: TransactionType
-    currency: field(default='US DOLLAR')
+    currency: field(default="US DOLLAR")
     amount: Decimal
     description: Optional[str]
     source_account_id: int
@@ -42,7 +43,7 @@ class TransactionDTO(BaseEntity):
 def get_id(id_generator=SnowflakeGenerator(42)) -> int:
     return next(id_generator)
 
-    
+
 class BaseModel(models.Model):
     id = models.BigIntegerField(primary_key=True, editable=False, default=get_id)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -56,10 +57,10 @@ class BaseModel(models.Model):
 class Account(BaseModel):
     user = models.ForeignKey(AccountUser, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    
+
 
 class AccountTransaction(BaseModel):
-    currency = models.CharField(default='US DOLLAR', max_length=100)
+    currency = models.CharField(default="US DOLLAR", max_length=100)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     type = models.CharField(choices=[(item.value, item.value) for item in TransactionType], max_length=100)
     description = models.TextField()

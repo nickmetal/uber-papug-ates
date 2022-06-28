@@ -1,74 +1,90 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-  
-    "title": "task::task_created::1",
-    "description": "json schema for task_created event (version 1)",
-  
-    "definitions": {
-      "data": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer"
-          },
-          "created_at": {
-            "type": "string", "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string", "format": "date-time"
-          },
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "status": {
-            "enum": ["new"]
-          },
-          "assignee": {
-            "type": "string", "format": "uuid"
-          },
-          "fee_on_assign": {
-            "type": "number", "format": "float"
-          },
-          "fee_on_complete": {
-            "type": "number", "format": "float"
-          }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "task::task_created::1",
+  "description": "json schema for task_created event (version 1)",
+  "definitions": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
         },
-        "required": [
-          "id",
-          "created_at",
-          "updated_at",
-          "title",
-          "description",
-          "status",
-          "assignee",
-          "fee_on_assign",
-          "fee_on_complete"
-        ]
-      }
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "new"
+          ]
+        },
+        "assignee": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fee_on_assign": {
+          "type": "number",
+          "format": "float"
+        },
+        "fee_on_complete": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "required": [
+        "id",
+        "created_at",
+        "updated_at",
+        "title",
+        "description",
+        "status",
+        "assignee",
+        "fee_on_assign",
+        "fee_on_complete"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
     },
-  
-    "type": "object",
-  
-    "properties": {
-      "id":      { "type": "string", "format": "uuid" },
-      "version": { "enum": [1] },
-      "event_name":    { "type": "string" },
-      "event_time":    { "type": "string", "format": "date-time" },
-      "producer":      { "type": "string" },
-  
-      "data": { "$ref": "#/definitions/data" }
+    "version": {
+      "enum": [
+        1
+      ]
     },
-  
-    "required": [
-      "id",
-      "version",
-      "event_name",
-      "event_time",
-      "producer",
-      "data"
-    ]
-  }
-  
+    "event_name": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string"
+    },
+    "data": {
+      "$ref": "#/definitions/data"
+    }
+  },
+  "required": [
+    "event_id",
+    "version",
+    "event_name",
+    "event_time",
+    "producer",
+    "data"
+  ]
+}

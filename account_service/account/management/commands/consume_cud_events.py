@@ -2,6 +2,7 @@ import json
 import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from common_lib.offset_mager import OffsetLogManager
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 from account import controllers
@@ -40,12 +41,18 @@ class Command(BaseCommand):
             service_name=self.service_name,
             event_router=event_router,
         )
+        offset_manager = OffsetLogManager.build(
+            mongo_dsn=settings.MONGO_DSN,
+            db_name=settings.MONGO_DB_NAME,
+            collection_name=f"{self.service_name.value}_event_offset",
+        )
         self.event_manager = EventManager(
             mq_publisher=None,
             event_router=event_router,
             schema_basedir=settings.EVENT_SCHEMA_DIR,
             service_name=self.service_name,
             failed_event_manager=self.failed_events_manager,
+            offset_manager=offset_manager,
         )
         self.rmq_client = RabbitMQMultiConsumer(consumers=consumers)
         self.rmq_client.listen()
@@ -54,6 +61,6 @@ class Command(BaseCommand):
         try:
             event = json.loads(body)
             self.event_manager.consume_event(event)
-        except:
+        except Exception:
             logging.exception("trace")
             self.stderr.write(self.style.ERROR(f"Un ack message: {body}"))
