@@ -41,7 +41,7 @@ class Command(BaseCommand):
         offset_manager = OffsetLogManager.build(
             mongo_dsn=settings.MONGO_DSN,
             db_name=settings.MONGO_DB_NAME,
-            collection_name=f"{self.service_name}_event_offset",
+            collection_name=f"{self.service_name.value}_event_offset",
         )
 
         self.event_manager = EventManager(
