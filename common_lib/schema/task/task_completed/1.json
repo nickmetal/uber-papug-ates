@@ -1,42 +1,51 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-  
-    "title": "task::task_completed::1",
-    "description": "json schema for task_completed event (version 1)",
-  
-    "definitions": {
-      "data": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer"
-          }
-        },
-        "required": [
-            "id"
-        ]
-      }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "task::task_completed::1",
+  "description": "json schema for task_completed event (version 1)",
+  "definitions": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "event_id"
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
     },
-  
-    "type": "object",
-  
-    "properties": {
-      "id":      { "type": "string", "format": "uuid" },
-      "version": { "enum": [1] },
-      "event_name":    { "type": "string" },
-      "event_time":    { "type": "string", "format": "date-time" },
-      "producer":      { "type": "string" },
-  
-      "data": { "$ref": "#/definitions/data" }
+    "version": {
+      "enum": [
+        1
+      ]
     },
-  
-    "required": [
-      "id",
-      "version",
-      "event_name",
-      "event_time",
-      "producer",
-      "data"
-    ]
-  }
-  
+    "event_name": {
+      "type": "string"
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string"
+    },
+    "data": {
+      "$ref": "#/definitions/data"
+    }
+  },
+  "required": [
+    "event_id",
+    "version",
+    "event_name",
+    "event_time",
+    "producer",
+    "data"
+  ]
+}

@@ -32,7 +32,7 @@ run-docker:
 
 
 run-migrations:
-	python manage.py makemigrations task && python manage.py migrate
+	python manage.py makemigrations account && python manage.py migrate
 
 run-dev-server:
-	python manage.py runserver 0.0.0.0:7777
+	python manage.py runserver 0.0.0.0:8888

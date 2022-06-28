@@ -32,6 +32,7 @@ event_manager = EventManager(
     schema_basedir=settings.EVENT_SCHEMA_DIR,
     service_name=ServiceName.TASK_SERVICE,
     failed_event_manager=failed_event_manager,
+    offset_manager=None,
 )
 
 

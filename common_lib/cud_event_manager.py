@@ -8,7 +8,9 @@ from uuid import UUID, uuid4
 
 from pymongo.collection import Collection
 from pymongo.mongo_client import MongoClient
+from dateutil import parser
 
+from common_lib.offset_mager import OffsetLogManager, Offset
 from common_lib.rabbit import RabbitMQPublisher
 from common_lib.schema.validator import Validator, get_schema
 
@@ -20,7 +22,7 @@ class CUDEvent:
     """Base CUD model for current service"""
 
     data: Dict
-    id: UUID = field(default_factory=uuid4)
+    event_id: UUID = field(default_factory=uuid4)
     version: int = field(default=1)
     event_name: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     producer: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
@@ -94,7 +96,8 @@ class FailedEventManager:
         consume_events = self.read_consume_events_by_service(service_name=service_name)
         for event in consume_events:
             logger.info(f"processing faield event for {service_name=}, {event=}")
-            callback = event_router[event["event_name"]]
+            event_name = EventManager._normilize_event_name(event["origin_event"])
+            callback = event_router[event_name]
             try:
                 callback(event["origin_event"])
             except Exception as e:
@@ -112,6 +115,7 @@ class EventManager:
         schema_basedir: str,
         failed_event_manager: FailedEventManager,
         service_name: ServiceName,
+        offset_manager: OffsetLogManager,
         event_router: Optional[Dict] = None,
     ) -> None:
         self.mq_publisher = mq_publisher
@@ -119,6 +123,7 @@ class EventManager:
         self.schema_basedir = schema_basedir
         self.failed_event_manager = failed_event_manager
         self.service_name = service_name
+        self.offset_manager = offset_manager
 
     def consume_event(self, event: Dict):
         logger.debug(f"{event=}")
@@ -126,7 +131,14 @@ class EventManager:
         if cb:
             try:
                 self._validate_incomming_event(event)
-                cb(event)
+                offset = self.offset_manager.get_offet()
+                if self._is_event_matches_offset(offset=offset, event=event):
+                    cb(event)
+                    new_offset = Offset(message_id=str(event["event_id"]), created_at=parser.parse(event["event_time"]))
+                    self.offset_manager.set_offset(new_offset)
+                else:
+                    logger.debug(f"skipping {event} due to {offset}")
+
             except Exception as e:
                 logger.exception(f"consume callback({cb=}) failed during {event=}")
                 self.failed_event_manager.store_failed_consume_event(
@@ -175,7 +187,8 @@ class EventManager:
         validator.validate(data=event)
         logger.debug(f"cache usage: {get_schema.cache_info()=}")
 
-    def _normilize_event_name(self, event: Dict) -> str:
+    @classmethod
+    def _normilize_event_name(cls, event: Dict) -> str:
         """Maps events from external services to the common format"""
         event_name_map = {
             "AccountCreated": "account_created",
@@ -197,3 +210,12 @@ class EventManager:
         if domain:
             return domain
         raise ValueError(f"Unknown {producer=}")
+
+    def _is_event_matches_offset(self, offset: Optional[Offset], event: Dict) -> bool:
+        # ready all data from distr log since offset is empty
+        if not offset:
+            return True
+
+        # TODO: add proper TZ handling
+        event_time = parser.parse(event["event_time"]).replace(tzinfo=None)
+        return event_time > offset.created_at.replace(tzinfo=None)

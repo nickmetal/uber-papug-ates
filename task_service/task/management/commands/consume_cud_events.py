@@ -1,8 +1,12 @@
 import json
 import logging
+from typing import Dict
+
 from django.core.management.base import BaseCommand
 from django.conf import settings
+
 from task import controllers
+from common_lib.offset_mager import OffsetLogManager
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 
@@ -34,6 +38,11 @@ class Command(BaseCommand):
             service_name=self.service_name,
             event_router=event_router,
         )
+        offset_manager = OffsetLogManager.build(
+            mongo_dsn=settings.MONGO_DSN,
+            db_name=settings.MONGO_DB_NAME,
+            collection_name=f"{self.service_name}_event_offset",
+        )
 
         self.event_manager = EventManager(
             mq_publisher=None,
@@ -41,13 +50,19 @@ class Command(BaseCommand):
             schema_basedir=settings.EVENT_SCHEMA_DIR,
             service_name=self.service_name,
             failed_event_manager=self.failed_events_manager,
+            offset_manager=offset_manager,
         )
         self.rmq_client.listen()
 
     def handle_rabbitmq_message(self, ch, method, properties, body: bytes):
         try:
             event = json.loads(body)
+            if not isinstance(event, Dict) or not event:
+                logging.warning("Unexpected json type received")
+                return
+
             self.event_manager.consume_event(event)
+
         except json.decoder.JSONDecodeError as e:
             logging.error(f"Bad json data receieved: {e=}, {e.doc=}")
         except Exception:

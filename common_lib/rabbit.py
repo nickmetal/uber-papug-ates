@@ -38,7 +38,9 @@ class ConsumerConfig:
     queue: str
     callback: Callable
     exchange_type: str = "fanout"
+    # see more https://www.rabbitmq.com/streams.html
     queue_arguments: dict = field(default_factory=lambda: {"x-queue-type": "stream"})
+    queue_consume_arguments: dict = field(default_factory=lambda: {"x-stream-offset": "first", "prefetch-count": 10})
 
     def __hash__(self) -> int:
         return hash(self.exchange) + hash(self.queue)
@@ -59,18 +61,26 @@ class RabbitMQMultiConsumer:
         self.auto_ack = auto_ack
         self._prefetch_default = 1
 
-    def connect(self):
+    def listen(self):
+        """Run infinite event loop with scheduler consumers"""
+        connection = self._connect()
+        try:
+            connection.ioloop.start()
+        except (KeyboardInterrupt, Exception):
+            connection.close()
+
+    def _connect(self):
         parameters = pika.URLParameters(self.dsn)
-        connection = pika.SelectConnection(parameters=parameters, on_open_callback=self.on_connected)
+        connection = pika.SelectConnection(parameters=parameters, on_open_callback=self._on_connected)
         return connection
 
-    def on_connected(self, connection):
+    def _on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""
         for consumer in self.consumers:
             logger.debug(f"creating channel for {consumer=}")
-            connection.channel(on_open_callback=partial(self.on_channel_open, consumer=consumer))
+            connection.channel(on_open_callback=partial(self._on_channel_open, consumer=consumer))
 
-    def on_qos_setup(self, method, consumer: ConsumerConfig):
+    def _on_qos_setup(self, method, consumer: ConsumerConfig):
         self._connections[consumer].exchange_declare(
             consumer.exchange, exchange_type=consumer.exchange_type, auto_delete=False
         )
@@ -80,34 +90,29 @@ class RabbitMQMultiConsumer:
             durable=True,
             auto_delete=False,
             arguments=consumer.queue_arguments,
-            callback=partial(self.on_queue_declared, consumer=consumer),
+            callback=partial(self._on_queue_declared, consumer=consumer),
         )
         self._connections[consumer].queue_bind(exchange=consumer.exchange, queue=consumer.queue)
 
-    def on_channel_open(self, channel: pika.channel.Channel, consumer: ConsumerConfig):
+    def _on_channel_open(self, channel: pika.channel.Channel, consumer: ConsumerConfig):
         """Called when our channel has opened"""
         if consumer in self._connections:
             raise ValueError(f"Consumer should be added once: {consumer}")
         self._connections[consumer] = channel
-        channel.basic_qos(prefetch_count=self._prefetch_default, callback=partial(self.on_qos_setup, consumer=consumer))
+        channel.basic_qos(
+            prefetch_count=self._prefetch_default, callback=partial(self._on_qos_setup, consumer=consumer)
+        )
 
     def _custom_ack(self, ch: pika.channel.Channel, method, properties, body, consumer_cb: Callable):
         consumer_cb(ch, method, properties, body)
         ch.basic_ack(method.delivery_tag)
 
-    def on_queue_declared(self, frame, consumer: ConsumerConfig):
+    def _on_queue_declared(self, frame, consumer: ConsumerConfig):
         """Called when RabbitMQ has told us our Queue has been declared, frame is the response from RabbitMQ"""
         cb = partial(self._custom_ack, consumer_cb=consumer.callback)
         self._connections[consumer].basic_consume(
             consumer.queue,
             cb,
             auto_ack=self.auto_ack,
-            arguments={"x-stream-offset": "first", "prefetch-count": self._prefetch_default},
+            arguments=consumer.queue_consume_arguments,
         )
-
-    def listen(self):
-        connection = self.connect()
-        try:
-            connection.ioloop.start()
-        except (KeyboardInterrupt, Exception):
-            connection.close()
