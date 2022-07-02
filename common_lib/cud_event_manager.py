@@ -53,6 +53,10 @@ class FailedEventManager:
         return cls(error_collection=error_collection)
 
     def store_failed_produce_event(self, exception: Exception, origin_event: Dict):
+        # TODO: improve that
+        if isinstance(origin_event["event_id"], UUID):
+            origin_event["event_id"] = str(origin_event["event_id"])
+
         error_event = {
             "producer": ServiceName(origin_event["producer"]).value,
             "origin_event": origin_event,
@@ -129,21 +133,21 @@ class EventManager:
         logger.debug(f"{event=}")
         cb = self.event_router.get(self._normilize_event_name(event))
         if cb:
+            self._validate_incomming_event(event)
+            new_offset = Offset(message_id=str(event["event_id"]), created_at=parser.parse(event["event_time"]))
+            offset = self.offset_manager.get_offet()
+
             try:
-                self._validate_incomming_event(event)
-                offset = self.offset_manager.get_offet()
                 if self._is_event_matches_offset(offset=offset, event=event):
                     cb(event)
-                    new_offset = Offset(message_id=str(event["event_id"]), created_at=parser.parse(event["event_time"]))
-                    self.offset_manager.set_offset(new_offset)
                 else:
                     logger.debug(f"skipping {event} due to {offset}")
-
             except Exception as e:
                 logger.exception(f"consume callback({cb=}) failed during {event=}")
                 self.failed_event_manager.store_failed_consume_event(
                     exception=e, origin_event=event, consumer=self.service_name
                 )
+                self.offset_manager.set_offset(new_offset)
         else:
             logger.warning(f"no callback provided for {event=} specified")
 

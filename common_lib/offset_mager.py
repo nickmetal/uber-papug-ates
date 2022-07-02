@@ -35,7 +35,7 @@ class OffsetLogManager:
     def set_offset(self, offset: Offset):
         """Stores current offset in db"""
         doc = {**asdict(offset), "_id": self._record_id}
-        self._collection.insert_one(doc)
+        self._collection.update_one({"_id": self._record_id}, {"$set": doc}, upsert=True)
 
     def get_offet(self) -> Optional[Offset]:
         """Gets current offset from db"""
