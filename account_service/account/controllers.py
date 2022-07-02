@@ -91,8 +91,8 @@ def handle_task_created(event: Dict):
         task = Task.objects.create(**task_info)
         task.save()
 
-        send_account_change_event(event_manager, company_account.public_id, company_income)
-        send_account_change_event(event_manager, assignee_account.public_id, -company_income)
+    send_account_change_event(event_manager, company_account.public_id, company_income)
+    send_account_change_event(event_manager, assignee_account.public_id, -company_income)
 
 
 def handle_task_completed(event: Dict):
@@ -150,6 +150,7 @@ def handle_tasks_assigned(event: Dict):
         - creates out transaction for task's assignee
         - updates task record in db
     """
+    # TODO: send event once transaction accepted
     with transaction.atomic():
         shuffled_tasks = event["data"]["tasks"]
         transactions_to_insert = []

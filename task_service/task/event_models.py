@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TaskServiceCUDEvent:
     """Base CUD model for current service"""
+
     data: Dict
-    id: uuid4 = field(default_factory=uuid4)
+    event_id: uuid4 = field(default_factory=uuid4)
     version: int = field(default=1)
     event_name: str = field(default="<not_set>")  # <not_set> is dataclass issue, implementation workaround
     event_time: datetime = field(default_factory=datetime.utcnow)
     producer: str = field(default="task_service")
-    
+
 
 @dataclass
 class TaskCreatedEvent(TaskServiceCUDEvent):
@@ -40,7 +41,7 @@ class TaskCompletedEvent(TaskServiceCUDEvent):
 class TasksAssignedEvent(TaskServiceCUDEvent):
     data: dict
     """data:
-    
+
     {"tasks": [{"id": 1, "assignee": "nick", "fee"}]}  # todo: update
     """
     event_name: str = field(default="tasks_assigned")

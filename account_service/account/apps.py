@@ -21,6 +21,7 @@ class AccountConfig(AppConfig):
             company_user, is_new = AccountUser.objects.get_or_create(
                 username=settings.COMPANY_SLUG, role="admin", public_id="1"
             )
+            # TODO: add uniq const
             company_account, is_new = Account.objects.get_or_create(user=company_user)
             if is_new:
                 failed_event_manager = FailedEventManager.build(
