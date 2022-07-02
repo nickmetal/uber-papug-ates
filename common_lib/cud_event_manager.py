@@ -10,7 +10,7 @@ from pymongo.collection import Collection
 from pymongo.mongo_client import MongoClient
 from dateutil import parser
 
-from common_lib.offset_mager import OffsetLogManager, Offset
+from common_lib.offset_manager import OffsetLogManager, Offset
 from common_lib.rabbit import RabbitMQPublisher
 from common_lib.schema.validator import Validator, get_schema
 
@@ -72,6 +72,7 @@ class FailedEventManager:
         error_event = {
             "consumer": consumer.value,
             "origin_event": origin_event,
+            "status": "NEW",
             "exception": {
                 "type": exception.__class__.__name__,
                 "message": str(exception),
@@ -85,16 +86,16 @@ class FailedEventManager:
         self.error_collection.insert_one(event)
 
     def read_failed_event_by_id(self, event_id: str) -> Optional[Dict]:
-        self.error_collection.find_one({"event_id": event_id})
+        return self.error_collection.find_one({"event_id": event_id})
 
     def read_produce_events_by_service(self, service_name: ServiceName) -> List[Dict]:
-        return self.error_collection.find({"producer": service_name.value}) or []
+        return list(self.error_collection.find({"producer": service_name.value, "status": "NEW"}))
 
     def read_consume_events_by_service(self, service_name: ServiceName) -> List[Dict]:
-        return self.error_collection.find({"consumer": service_name.value}) or []
+        return list(self.error_collection.find({"consumer": service_name.value, "status": "NEW"}))
 
-    def remove_event(self, mongo_id):
-        self.error_collection.delete_one({"_id": mongo_id})
+    def mark_error_event_as_processed(self, mongo_id):
+        self.error_collection.update_one({"_id": mongo_id}, {"$set": {"status": "PROCESSED"}})
 
     def process_failed_events_by_consumer(self, service_name: ServiceName, event_router: Dict[str, Callable]):
         consume_events = self.read_consume_events_by_service(service_name=service_name)
@@ -106,8 +107,7 @@ class FailedEventManager:
                 callback(event["origin_event"])
             except Exception as e:
                 raise Exception(f"Can not reprocess {event=} due to {e=}")
-            event_db_id = event["_id"]
-            self.remove_event(event_db_id)
+            self.mark_error_event_as_processed(event["_id"])
 
 
 class EventManager:

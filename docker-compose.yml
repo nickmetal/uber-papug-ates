@@ -8,6 +8,8 @@ services:
     env_file:
       - ./task_service/.env
     command: python manage.py runserver 0.0.0.0:7777
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     ports:
       - "7777:7777"
     expose:
@@ -24,6 +26,8 @@ services:
     env_file:
       - ./task_service/.env
     command: bash -c "python manage.py migrate --noinput"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
 
@@ -34,6 +38,8 @@ services:
     env_file:
       - ./task_service/.env
     command: bash -c "python manage.py consume_cud_events"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
     depends_on:
@@ -46,6 +52,8 @@ services:
     env_file:
       - ./analytic_service/.env
     command: python manage.py runserver 0.0.0.0:9000
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
     ports:
@@ -60,6 +68,8 @@ services:
     env_file:
       - ./analytic_service/.env
     command: bash -c "python manage.py migrate --noinput"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
 
@@ -70,6 +80,8 @@ services:
     env_file:
       - ./analytic_service/.env
     command: bash -c "python manage.py consume_cud_events"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
     depends_on:
@@ -82,6 +94,8 @@ services:
     env_file:
       - ./account_service/.env
     command: python manage.py runserver 0.0.0.0:8888
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
     ports:
@@ -96,6 +110,8 @@ services:
     env_file:
       - ./account_service/.env
     command: bash -c "python manage.py migrate --noinput"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
 
@@ -106,6 +122,8 @@ services:
     env_file:
       - ./account_service/.env
     command: bash -c "python manage.py consume_cud_events"
+    volumes:
+      - ./xdev/tmp/db:/tmp/
     networks:
       - rabbitmq_network
     depends_on:

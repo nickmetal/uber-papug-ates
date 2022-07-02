@@ -23,7 +23,7 @@ All system requirements located in course materials page.
 
     - Manages user's account.
 
-- Analytics 
+- Analytics
 
      - Register user's account in analytics service once user created by Auth Service.
 
@@ -58,7 +58,17 @@ We've taken event driven architecture for the designing based on course objectiv
 
     - Implement my own oAuth server
 
-    - Fix docker-compose configs
+    - fix error "Channel is close" reestablish mq connection if it happens
+
+    - Add postgresql db
+
+    - Add tracing
+
+    - Add tests
+
+    - nginx/tls
+
+    - fix bugs
 
 
 # Event storming
@@ -97,3 +107,9 @@ export MONGO_ERROR_COLLECTION=errors
 # 5. start analytics service
 # 6. start scheduler service
 ```
+
+
+### Bugs
+
+- fix mongo error: record id 62c05c040be92be5fb1e5d89
+- keep rabbit stream pointer per each stream, not globally

@@ -2,7 +2,7 @@ import json
 import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from common_lib.offset_mager import OffsetLogManager
+from common_lib.offset_manager import OffsetLogManager
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 from account import controllers
@@ -54,7 +54,7 @@ class Command(BaseCommand):
             failed_event_manager=self.failed_events_manager,
             offset_manager=offset_manager,
         )
-        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers)
+        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers, dsn=settings.RABBITMQ_DSN)
         self.rmq_client.listen()
 
     def handle_rabbitmq_message(self, ch, method, properties, body):
