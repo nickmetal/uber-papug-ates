@@ -2,7 +2,7 @@ import json
 import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from common_lib.offset_mager import OffsetLogManager
+from common_lib.offset_manager import OffsetLogManager
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 from analytics import controllers
@@ -35,7 +35,7 @@ class Command(BaseCommand):
                 callback=self.handle_rabbitmq_message,
             ),
         ]
-        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers)
+        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers, dsn=settings.RABBITMQ_DSN)
         event_router = {
             "task_created": controllers.handle_task_created,
             "task_completed": controllers.handle_task_completed,

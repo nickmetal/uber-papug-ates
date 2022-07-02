@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from task import controllers
-from common_lib.offset_mager import OffsetLogManager
+from common_lib.offset_manager import OffsetLogManager
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
 
@@ -22,7 +22,7 @@ class Command(BaseCommand):
         consumers = [
             ConsumerConfig(queue=task_queue, exchange=auth_service_exchange, callback=self.handle_rabbitmq_message),
         ]
-        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers)
+        self.rmq_client = RabbitMQMultiConsumer(consumers=consumers, dsn=settings.RABBITMQ_DSN)
 
         event_router = {
             "account_created": controllers.handle_auth_account_created,

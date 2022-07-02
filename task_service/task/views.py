@@ -28,7 +28,7 @@ failed_event_manager = FailedEventManager.build(
     error_collection_name=settings.MONGO_ERROR_COLLECTION,
 )
 event_manager = EventManager(
-    mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME),
+    mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME, dsn=settings.RABBITMQ_DSN),
     schema_basedir=settings.EVENT_SCHEMA_DIR,
     service_name=ServiceName.TASK_SERVICE,
     failed_event_manager=failed_event_manager,

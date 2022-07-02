@@ -32,8 +32,6 @@ grpcio==1.46.3
 idna==3.3
 importlib-resources==5.8.0
 iniconfig==1.1.1
-ipdb==0.13.9
-ipython==8.3.0
 isoduration==20.11.0
 isort==5.10.1
 jedi==0.18.1
@@ -42,14 +40,11 @@ jsonschema==4.5.1
 jwcrypto==1.2
 kiwisolver==1.4.2
 lazy-object-proxy==1.7.1
-matplotlib==3.5.1
-matplotlib-inline==0.1.3
 mccabe==0.6.1
 multidict==6.0.2
 mypy==0.950
 mypy-extensions==0.4.3
 networkx==2.8
-numpy==1.22.3
 oauthlib==3.2.0
 opentelemetry-api==1.12.0rc1
 opentelemetry-distro==0.31b0
@@ -105,7 +100,6 @@ requests==2.27.1
 requests-oauthlib==1.3.1
 rfc3339-validator==0.1.4
 rfc3987==1.3.8
-scipy==1.8.0
 six==1.16.0
 snowflake-id==0.0.2
 sqlparse==0.4.2

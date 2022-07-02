@@ -6,13 +6,12 @@ from typing import Callable, Dict, List
 
 import pika
 import pika.channel
-from django.conf import settings
 
 logger = getLogger(__name__)
 
 
 class RabbitMQPublisher:
-    def __init__(self, exchange_name: str, dsn: str = settings.RABBITMQ_DSN) -> None:
+    def __init__(self, exchange_name: str, dsn: str) -> None:
         self.exchange_name = exchange_name
         self.dsn = dsn
         self.exchange_type = "fanout"
@@ -25,6 +24,10 @@ class RabbitMQPublisher:
         return channel
 
     def publish(self, body: Dict):
+        if self.channel.is_closed():
+            logger.warning("reconnecting")
+            self.channel = self.connect()
+
         return self.channel.basic_publish(
             exchange=self.exchange_name,
             body=json.dumps(body, default=str).encode("utf-8"),
@@ -51,7 +54,7 @@ class RabbitMQMultiConsumer:
 
     def __init__(
         self,
-        dsn: str = settings.RABBITMQ_DSN,
+        dsn: str,
         consumers: List[ConsumerConfig] = None,
         auto_ack: bool = False,
     ) -> None:
