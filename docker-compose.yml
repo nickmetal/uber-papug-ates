@@ -1,0 +1,116 @@
+version: "3.9"
+
+services:
+  task_service:
+    build:
+      context: ./
+      dockerfile: ./task_service/Dockerfile
+    env_file:
+      - ./task_service/.env
+    command: python manage.py runserver 0.0.0.0:7777
+    ports:
+      - "7777:7777"
+    expose:
+      - "7777"
+    networks:
+      - rabbitmq_network
+    depends_on:
+      - task_service_migration
+
+  task_service_migration:
+    build:
+      context: ./
+      dockerfile: ./task_service/Dockerfile
+    env_file:
+      - ./task_service/.env
+    command: bash -c "python manage.py migrate --noinput"
+    networks:
+      - rabbitmq_network
+
+  task_service_cud_event_manager:
+    build:
+      context: ./
+      dockerfile: ./task_service/Dockerfile
+    env_file:
+      - ./task_service/.env
+    command: bash -c "python manage.py consume_cud_events"
+    networks:
+      - rabbitmq_network
+    depends_on:
+      - task_service
+
+  analytic_service:
+    build:
+      context: ./
+      dockerfile: ./analytic_service/Dockerfile
+    env_file:
+      - ./analytic_service/.env
+    command: python manage.py runserver 0.0.0.0:9000
+    networks:
+      - rabbitmq_network
+    ports:
+      - "0.0.0.0:9000:9000"
+    depends_on:
+      - analytic_service_migration
+
+  analytic_service_migration:
+    build:
+      context: ./
+      dockerfile: ./analytic_service/Dockerfile
+    env_file:
+      - ./analytic_service/.env
+    command: bash -c "python manage.py migrate --noinput"
+    networks:
+      - rabbitmq_network
+
+  analytic_service_cud_event_manager:
+    build:
+      context: ./
+      dockerfile: ./analytic_service/Dockerfile
+    env_file:
+      - ./analytic_service/.env
+    command: bash -c "python manage.py consume_cud_events"
+    networks:
+      - rabbitmq_network
+    depends_on:
+      - analytic_service
+
+  account_service:
+    build:
+      context: ./
+      dockerfile: ./account_service/Dockerfile
+    env_file:
+      - ./account_service/.env
+    command: python manage.py runserver 0.0.0.0:8888
+    networks:
+      - rabbitmq_network
+    ports:
+      - "0.0.0.0:8888:8888"
+    depends_on:
+      - account_service_migration
+
+  account_service_migration:
+    build:
+      context: ./
+      dockerfile: ./account_service/Dockerfile
+    env_file:
+      - ./account_service/.env
+    command: bash -c "python manage.py migrate --noinput"
+    networks:
+      - rabbitmq_network
+
+  account_service_cud_event_manager:
+    build:
+      context: ./
+      dockerfile: ./account_service/Dockerfile
+    env_file:
+      - ./account_service/.env
+    command: bash -c "python manage.py consume_cud_events"
+    networks:
+      - rabbitmq_network
+    depends_on:
+      - account_service
+
+networks:
+  rabbitmq_network:
+    external: true
