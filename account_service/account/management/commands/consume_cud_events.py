@@ -2,16 +2,27 @@ import json
 import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from common_lib.offset_manager import OffsetLogManager
+
+from dependency_injector.wiring import inject, Provide
+
 from common_lib.rabbit import RabbitMQMultiConsumer, ConsumerConfig
 from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
+from common_lib.di_container import Container
+
 from account import controllers
 
 
 class Command(BaseCommand):
     help = "Consumes cud events from common message broker"
 
-    def handle(self, *args, **options):
+    @inject
+    def handle(
+        self,
+        *args,
+        event_manager: EventManager = Provide[Container.event_manager],
+        failed_event_manager: FailedEventManager = Provide[Container.failed_event_manager],
+        **options,
+    ):
         task_exchange = settings.TASKS_EXCHANGE_NAME
         task_queue = settings.TASKS_TO_ACCOUNT_QUEUE
 
@@ -31,29 +42,10 @@ class Command(BaseCommand):
             "tasks_assigned": controllers.handle_tasks_assigned,
             "account_created": controllers.handle_auth_account_created,
         }
-        self.failed_events_manager = FailedEventManager.build(
-            mongo_dsn=settings.MONGO_DSN,
-            db_name=settings.MONGO_DB_NAME,
-            error_collection_name=settings.MONGO_ERROR_COLLECTION,
-        )
-        self.service_name = ServiceName.ACCOUNT_SERVICE
-        self.failed_events_manager.process_failed_events_by_consumer(
-            service_name=self.service_name,
-            event_router=event_router,
-        )
-        offset_manager = OffsetLogManager.build(
-            mongo_dsn=settings.MONGO_DSN,
-            db_name=settings.MONGO_DB_NAME,
-            collection_name=f"{self.service_name.value}_event_offset",
-        )
-        self.event_manager = EventManager(
-            mq_publisher=None,
-            event_router=event_router,
-            schema_basedir=settings.EVENT_SCHEMA_DIR,
-            service_name=self.service_name,
-            failed_event_manager=self.failed_events_manager,
-            offset_manager=offset_manager,
-        )
+
+        service_name = ServiceName.ACCOUNT_SERVICE
+        failed_event_manager.process_failed_events_by_consumer(service_name=service_name, event_router=event_router)
+        self.event_manager = event_manager
         self.rmq_client = RabbitMQMultiConsumer(consumers=consumers, dsn=settings.RABBITMQ_DSN)
         self.rmq_client.listen()
 

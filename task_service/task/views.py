@@ -7,33 +7,17 @@ from django.http import HttpRequest, JsonResponse
 
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
-from django.conf import settings
+from dependency_injector.wiring import inject, Provide
 
 from common_lib.access_control import requires_scope
+from common_lib.di_container import Container
+from common_lib.cud_event_manager import EventManager
+
 from task.models import Task, TaskDTO, TaskStatus
-from common_lib.cud_event_manager import EventManager, FailedEventManager, ServiceName
-from common_lib.rabbit import RabbitMQPublisher
 from task.models import TaskTrackerUser
 from task.event_models import TaskCreatedEvent, TasksAssignedEvent, TaskCompletedEvent
 
-
 logger = logging.getLogger(__name__)
-
-
-# TODO: instead of global clients do: add DI IoC:
-# https://python-dependency-injector.ets-labs.org/introduction/di_in_python.html
-failed_event_manager = FailedEventManager.build(
-    mongo_dsn=settings.MONGO_DSN,
-    db_name=settings.MONGO_DB_NAME,
-    error_collection_name=settings.MONGO_ERROR_COLLECTION,
-)
-event_manager = EventManager(
-    mq_publisher=RabbitMQPublisher(exchange_name=settings.TASKS_EXCHANGE_NAME, dsn=settings.RABBITMQ_DSN),
-    schema_basedir=settings.EVENT_SCHEMA_DIR,
-    service_name=ServiceName.TASK_SERVICE,
-    failed_event_manager=failed_event_manager,
-    offset_manager=None,
-)
 
 
 def serialize_task(task: Task) -> Dict:
@@ -59,9 +43,10 @@ def get_task(request: HttpRequest, task_id: int):
     return JsonResponse(data=serialize_task(task))
 
 
+@inject
 @requires_scope("admin manager worker")
 @require_http_methods(["POST"])
-def add_task(request: HttpRequest):
+def add_task(request: HttpRequest, event_manager: EventManager = Provide[Container.event_manager]):
     # TODO: add form validation
     body = json.loads(request.body)
     body["fee_on_assign"] = round(random.uniform(-10, -20), 2)
@@ -75,9 +60,10 @@ def add_task(request: HttpRequest):
     return JsonResponse(data=response_data)
 
 
+@inject
 @requires_scope("admin manager worker")
 @require_http_methods(["PUT"])
-def update_task(request: HttpRequest):
+def update_task(request: HttpRequest, event_manager: EventManager = Provide[Container.event_manager]):
     """Is used by seeting complete status"""
     body = json.loads(request.body)
     id_ = body["id"]
@@ -88,9 +74,10 @@ def update_task(request: HttpRequest):
     return JsonResponse(data={"status": "updated"})
 
 
+@inject
 @requires_scope("admin manager")
 @require_http_methods(["POST"])
-def shuffle_tasks(request: HttpRequest):
+def shuffle_tasks(request: HttpRequest, event_manager: EventManager = Provide[Container.event_manager]):
     """Randomly shuffles not completed tasks across all users.
 
     Note: probably has distribution transaction issue, need to redesign and fix that

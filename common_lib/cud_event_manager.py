@@ -43,13 +43,8 @@ class FailedEventManager:
         self.error_collection = error_collection
 
     @classmethod
-    def build(
-        cls,
-        mongo_dsn: str,
-        db_name: str,
-        error_collection_name: str,
-    ) -> "FailedEventManager":
-        error_collection = MongoClient(mongo_dsn)[db_name][error_collection_name]
+    def build(cls, db_name: str, error_collection_name: str, mongo_client: MongoClient) -> "FailedEventManager":
+        error_collection = mongo_client[db_name][error_collection_name]
         return cls(error_collection=error_collection)
 
     def store_failed_produce_event(self, exception: Exception, origin_event: Dict):

@@ -23,13 +23,8 @@ class OffsetLogManager:
         self._record_id = 1  # single counter value
 
     @classmethod
-    def build(
-        cls,
-        mongo_dsn: str,
-        db_name: str,
-        collection_name: str,
-    ) -> "OffsetLogManager":
-        collection = MongoClient(mongo_dsn)[db_name][collection_name]
+    def build(cls, db_name: str, collection_name: str, mongo_client: MongoClient) -> "OffsetLogManager":
+        collection = mongo_client[db_name][collection_name]
         return cls(collection=collection)
 
     def set_offset(self, offset: Offset):

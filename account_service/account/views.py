@@ -79,6 +79,6 @@ def get_dashboard(request: HttpRequest):
         case "admin" | "manager":
             info = get_admin_dashboard(request, user)
         case _:
-            raise ValueError("Unknown role")
+            raise ValueError(f"Unknown role: {user['role']}")
 
     return JsonResponse(data=info)

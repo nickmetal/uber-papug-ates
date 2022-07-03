@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 import os
 
+from common_lib.cud_event_manager import ServiceName
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -177,3 +179,5 @@ BILLING_2_ANALYTICS_QUEUE = "billing-stream-to-analytics-service"
 MONGO_DSN = os.environ["MONGO_DSN"]
 MONGO_DB_NAME = os.environ["MONGO_DB_NAME"]
 MONGO_ERROR_COLLECTION = os.environ["MONGO_ERROR_COLLECTION"]
+SERVICE_NAME = ServiceName.ANALYTIC_SERVICE
+OFFSET_COLLECTION = f"{SERVICE_NAME.value}_event_offset"

@@ -4,6 +4,7 @@ from django.conf import settings
 
 from common_lib.cud_event_manager import CUDEvent, EventManager, FailedEventManager, ServiceName
 from common_lib.rabbit import RabbitMQPublisher
+from account_service import container
 
 
 logger = getLogger(__name__)
@@ -14,6 +15,8 @@ class AccountConfig(AppConfig):
     name = "account"
 
     def ready(self):
+        container.wire(modules=[".views", f"{self.name}.management.commands.consume_cud_events"])
+
         try:
             from account.models import Account
             from account.models import AccountUser

@@ -6,6 +6,8 @@ from typing import Callable, Dict, List
 
 import pika
 import pika.channel
+from pika.exchange_type import ExchangeType
+from pika.adapters.blocking_connection import BlockingChannel
 
 logger = getLogger(__name__)
 
@@ -14,17 +16,17 @@ class RabbitMQPublisher:
     def __init__(self, exchange_name: str, dsn: str) -> None:
         self.exchange_name = exchange_name
         self.dsn = dsn
-        self.exchange_type = "fanout"
+        self.exchange_type = ExchangeType.fanout
         self.channel = self.connect()
 
-    def connect(self):
+    def connect(self) -> BlockingChannel:
         connection = pika.BlockingConnection(pika.URLParameters(self.dsn))
         channel = connection.channel()
         channel.exchange_declare(exchange=self.exchange_name, exchange_type=self.exchange_type)
         return channel
 
     def publish(self, body: Dict):
-        if self.channel.is_closed():
+        if self.channel.is_closed:
             logger.warning("reconnecting")
             self.channel = self.connect()
 
@@ -40,7 +42,7 @@ class ConsumerConfig:
     exchange: str
     queue: str
     callback: Callable
-    exchange_type: str = "fanout"
+    exchange_type: ExchangeType = ExchangeType.fanout
     # see more https://www.rabbitmq.com/streams.html
     queue_arguments: dict = field(default_factory=lambda: {"x-queue-type": "stream"})
     queue_consume_arguments: dict = field(default_factory=lambda: {"x-stream-offset": "first", "prefetch-count": 10})
